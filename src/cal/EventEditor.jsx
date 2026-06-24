@@ -16,8 +16,10 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const setRec = (k, v) => setF((p) => ({ ...p, recurrence: { ...(p.recurrence || {}), [k]: v } }));
 
-  const activeTypes = ctx.types.filter((x) => x.active || x.id === f.typeId);
-  const activeAreas = ctx.areas.filter((x) => x.active || x.id === f.areaId);
+  // alphabetisch sortiert (die Leer-Option "– bitte wählen –" steht separat oben)
+  const byName = (a, b) => (a.name || "").localeCompare(b.name || "", "de");
+  const activeTypes = ctx.types.filter((x) => x.active || x.id === f.typeId).slice().sort(byName);
+  const activeAreas = ctx.areas.filter((x) => x.active || x.id === f.areaId).slice().sort(byName);
 
   const conflicts = useMemo(() => {
     if (!f.date || !f.start || !f.end) return [];
@@ -27,13 +29,24 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   const rec = f.recurrence || { freq: "none" };
   const readOnly = !canEdit;
 
+  // Ganztägig: Uhrzeiten auf den vollen Tag setzen / wieder Standardzeiten geben.
+  function toggleAllDay(on) {
+    setF((p) => (on
+      ? { ...p, allDay: true, start: "00:00", end: "23:59" }
+      : { ...p, allDay: false,
+          start: (!p.start || p.start === "00:00") ? "09:00" : p.start,
+          end: (!p.end || p.end === "23:59") ? "10:00" : p.end }));
+  }
+
   function validate() {
     if (!f.title.trim()) return "Bitte einen Titel eingeben.";
     if (!f.date) return "Bitte ein Beginn-Datum wählen.";
-    if (!f.start || !f.end) return "Bitte Start- und Endzeit angeben.";
     const ed = f.endDate || f.date;
     if (ed < f.date) return "Das Ende-Datum darf nicht vor dem Beginn liegen.";
-    if (ed === f.date && f.end <= f.start) return "Die Endzeit muss nach der Startzeit liegen.";
+    if (!f.allDay) {
+      if (!f.start || !f.end) return "Bitte Start- und Endzeit angeben.";
+      if (ed === f.date && f.end <= f.start) return "Die Endzeit muss nach der Startzeit liegen.";
+    }
     if (!f.creatorId) return "Bitte einen Ersteller wählen.";
     if (!f.areaId) return "Bitte einen Bereich wählen.";
     // Priorität & Terminart sind optional – nur bei Bedarf.
@@ -92,7 +105,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
               const icon = q.icon || ctx.typeById(q.typeId)?.icon || "📌";
               return (
                 <button key={q.id} onClick={() => setF((p) => ({
-                  ...p, title: p.title || q.label,
+                  ...p, title: p.title || q.label, icon: q.icon || p.icon,
                 }))} style={{
                   display: "flex", alignItems: "center", gap: 5, background: t.chip, color: t.text,
                   border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "6px 11px",
@@ -109,6 +122,13 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           <input style={sel} value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="z. B. Flight VIE–FRA" />
         </Field>
 
+        {/* Ganztägig-Schalter: blendet die Uhrzeiten aus, Termin gilt den ganzen Tag */}
+        <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: t.text, cursor: "pointer", marginBottom: 12 }}>
+          <input type="checkbox" checked={!!f.allDay} onChange={(e) => toggleAllDay(e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: t.accent }} />
+          🗓️ Ganztägig
+        </label>
+
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Beginn – Datum" required>
@@ -116,11 +136,13 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                 onChange={(e) => set("date", e.target.value)} />
             </Field>
           </div>
-          <div style={{ flex: "1 1 110px", minWidth: 0 }}>
-            <Field t={t} label="Beginn – Uhrzeit" required>
-              <input type="time" style={sel} value={f.start} onChange={(e) => set("start", e.target.value)} />
-            </Field>
-          </div>
+          {!f.allDay && (
+            <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+              <Field t={t} label="Beginn – Uhrzeit" required>
+                <input type="time" style={sel} value={f.start} onChange={(e) => set("start", e.target.value)} />
+              </Field>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
@@ -129,11 +151,13 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                 onChange={(e) => set("endDate", e.target.value)} />
             </Field>
           </div>
-          <div style={{ flex: "1 1 110px", minWidth: 0 }}>
-            <Field t={t} label="Ende – Uhrzeit" required>
-              <input type="time" style={sel} value={f.end} onChange={(e) => set("end", e.target.value)} />
-            </Field>
-          </div>
+          {!f.allDay && (
+            <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+              <Field t={t} label="Ende – Uhrzeit" required>
+                <input type="time" style={sel} value={f.end} onChange={(e) => set("end", e.target.value)} />
+              </Field>
+            </div>
+          )}
         </div>
 
         {/* Konfliktwarnung */}

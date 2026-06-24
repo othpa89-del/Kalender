@@ -93,22 +93,25 @@ export const REMINDER_OPTIONS = [
 ];
 
 // --- Schnellanlage-Vorlagen -------------------------------------------
-// Eine Kachel setzt beim Antippen NUR den Titel (label). Priorität, Bereich,
-// Terminart usw. wählt man bewusst selbst – es wird nichts vorausgefüllt.
-// `icon` = angezeigtes Kachel-Symbol (sonst Fallback auf die Terminart-Ikone).
+// Eine Kachel setzt beim Antippen Titel UND Icon des Termins. Priorität,
+// Bereich, Terminart wählt man bewusst selbst. Alphabetisch sortiert.
 export const QUICK_TEMPLATES = [
-  { id: "q_flight", label: "Flight", icon: "✈️" },
-  { id: "q_sim", label: "Simulator", icon: "🛫" },
-  { id: "q_meeting", label: "Meeting", icon: "👥" },
+  { id: "q_aaa", label: "AAA", icon: "🅰️" },
   { id: "q_arzt", label: "Arzt", icon: "🏥" },
-  { id: "q_urlaub", label: "Urlaub", icon: "🌴" },
   { id: "q_auto", label: "Auto", icon: "🚗" },
-  { id: "q_flugschule", label: "Flugschule", icon: "🏫" },
-  { id: "q_theo", label: "Theo", icon: "👦" },
-  { id: "q_maximilian", label: "Maximilian", icon: "👦" },
-  { id: "q_eurowings", label: "Eurowings", icon: "🛩️" },
   { id: "q_diverses", label: "Diverses", icon: "🗂️" },
+  { id: "q_eurowings", label: "Eurowings", icon: "🛩️" },
+  { id: "q_feier", label: "Feier", icon: "🎉" },
+  { id: "q_flug", label: "Flug", icon: "✈️" },
+  { id: "q_haus", label: "Haus", icon: "🏠" },
+  { id: "q_maximilian", label: "Maximilian", icon: "👦" },
+  { id: "q_meeting", label: "Meeting", icon: "👥" },
+  { id: "q_oma", label: "Oma", icon: "👵" },
+  { id: "q_opa", label: "Opa", icon: "👴" },
+  { id: "q_simulator", label: "Simulator", icon: "🛫" },
   { id: "q_ternitz", label: "Ternitz", icon: "📍" },
+  { id: "q_theo", label: "Theo", icon: "👦" },
+  { id: "q_urlaub", label: "Urlaub", icon: "🌴" },
 ];
 
 // =====================================================================
@@ -270,6 +273,7 @@ export function eventSpanDays(ev) {
 
 // Zeitbeschriftung eines (ggf. mehrtägigen) Vorkommens.
 export function occTimeLabel(ev) {
+  if (ev.allDay) return "Ganztägig";
   if (ev._span && ev._span > 1) {
     if (ev._spanStart) return `ab ${ev.start}`;
     if (ev._spanEnd) return `bis ${ev.end}`;

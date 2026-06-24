@@ -63,7 +63,7 @@ function persistDiff(prefix, prev, next) {
 
 function blankEvent(ctx) {
   return {
-    id: null, title: "", date: todayISO(), endDate: todayISO(), start: "09:00", end: "10:00",
+    id: null, title: "", icon: "", allDay: false, date: todayISO(), endDate: todayISO(), start: "09:00", end: "10:00",
     creatorId: ctx.activeUserId || "", areaId: "a_privat",
     priority: "", typeId: "", participants: [], description: "", location: "",
     address: "", notes: "", link: "", attachments: [], reminder: "none",
@@ -305,8 +305,9 @@ export default function App() {
     setEditor({ draft: { ...base, ...prefill }, isNew: true });
   }
   function openQuick(q) {
-    // Nur den Titel vorbelegen – Priorität, Bereich, Terminart wählt man selbst.
-    openNew({ title: q.label });
+    // Titel + Icon vorbelegen (Icon erscheint später am Termin im Kalender).
+    // Priorität, Bereich, Terminart wählt man weiterhin selbst.
+    openNew({ title: q.label, icon: q.icon });
   }
   function openEvent(ev) {
     // ev kann ein Vorkommen sein -> Basis-Termin laden
@@ -388,7 +389,7 @@ export default function App() {
   const isList = ["tasks", "shopping", "notes", "gossip"].includes(view); // eigene Eingabe, kein Termin-Toolbar
 
   return (
-    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90 }}>
+    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90, zoom: 0.9 }}>
       {/* ===== Header ===== */}
       <header style={{ background: t.navy, color: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.25)" }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) 14px 10px" }}>

@@ -160,6 +160,7 @@ export function ParticipantDots({ ev, ctx, size = 11, max = 4 }) {
 // =====================================================================
 export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
   const type = ctx.typeById(ev.typeId);
+  const icon = (type && type.icon) || ev.icon || "📌";
   const area = ctx.areaById(ev.areaId);
   const creator = ctx.userById(ev.creatorId);
   const prio = ev.priority ? priorityById(ev.priority) : null;
@@ -174,7 +175,7 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
       <span style={{ flex: 1, minWidth: 0, padding: dense ? "6px 9px" : "9px 11px" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
           {conflict && <span title="Überschneidung" style={{ flex: "none", fontSize: dense ? 12 : 13 }}>⚠️</span>}
-          <span style={{ fontSize: dense ? 14 : 16, flex: "none" }}>{type ? type.icon : "📌"}</span>
+          <span style={{ fontSize: dense ? 14 : 16, flex: "none" }}>{icon}</span>
           <span style={{
             fontWeight: 700, fontSize: dense ? 13 : 14, overflow: "hidden",
             textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0,
@@ -227,7 +228,7 @@ export function MiniEvent({ t, ev, ctx, onClick, conflict }) {
       outline: conflict ? "1.5px solid #E53935" : "none", outlineOffset: -1.5,
     }}>
       {conflict && <span style={{ flex: "none", fontSize: 9 }}>⚠️</span>}
-      <span style={{ flex: "none", fontSize: 10 }}>{type ? type.icon : "📌"}</span>
+      <span style={{ flex: "none", fontSize: 10 }}>{(type && type.icon) || ev.icon || "📌"}</span>
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
         {ev.title}
       </span>

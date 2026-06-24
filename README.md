@@ -6,21 +6,38 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
 
 ## ✨ Funktionen
 
+- **Tabs:** Start (Dashboard) · Tag · Woche · Monat · Aufgaben · Einkauf ·
+  Nice to know · Gossip.
 - **Benutzer** Patrick (Administrator) & Nadja (Benutzer) – Namen, Farben und
   Rollen frei änderbar; oben wird der aktive Benutzer (Ersteller) gewählt.
-- **Ansichten:** Tag, Woche, Monat, Agenda und Dashboard mit Schnellstatistik.
-- **Termine** mit Pflichtfeldern (Titel, Datum, Start/Ende, Ersteller, Bereich,
-  Priorität, Terminart) und optionalen Feldern (Beschreibung, Ort, Adresse,
-  Notizen, Link, Anhänge, Erinnerung).
-- **Bereiche/Firmen** (Firma A/B/C, Privat) mit frei wählbaren Farben.
-- **Prioritäten** Kritisch/Hoch/Normal/Niedrig mit Farbcodierung und Filter.
-- **Terminarten mit Icons** inkl. Aviation-Kategorien (Flight, Simulator, Examiner,
-  Instructor, Line Training, Check Flight, Recurrent, Medical, Layover …); eigene
-  Terminarten mit eigenen Icons.
-- **Schnellanlage**, **Sperren** (🔒), **wiederkehrende Termine**, **Aufgaben-Modul**,
-  **Anhänge & Links**, **Standortnavigation** (Google/Apple Maps), **Konflikterkennung**,
-  **Filter & Volltextsuche**, **Benachrichtigungen**, **ICS-Export** (Outlook/Google/Apple).
-- **Dark Mode** (Standard) + Light Mode; Hauptfarbe Dunkelblau.
+- **Kalender-Ansichten:**
+  - **Tag** mit Stundenraster, **Woche** als gut lesbare Tagesliste,
+    **Monat** als Punkte-Raster mit Termin-Liste des angetippten Tages.
+- **Termine** mit Titel, Beginn-/Ende-**Datum** (mehrtägige Termine möglich) und
+  **Uhrzeiten** oder **Ganztägig**-Schalter; Ersteller und Bereich. **Priorität**
+  und **Terminart** sind optional. Optional außerdem Beschreibung, Ort, Adresse,
+  Notizen, Link, Anhänge, Erinnerung, Teilnehmer, Sperre, Wiederholung.
+- **Schnellanlage**: Kacheln (alphabetisch) setzen Titel **und Icon** des Termins;
+  das Icon erscheint anschließend am Termin im Kalender.
+- **Bereiche/Firmen** (Firma A/B/C, Privat) mit frei wählbaren Farben; Standard
+  neuer Termine: **Privat**.
+- **Aufgaben-Modul** (Titel, Verantwortlich, Fällig am, Priorität).
+- **🛒 Einkaufsliste:** eintragen, Menge, häufige Artikel als Schnell-Buttons,
+  **automatische Kategorien**, abhaken/bearbeiten, „Alle abhaken / Erledigte
+  entfernen / Liste leeren", Farbpunkt „wer hat hinzugefügt".
+- **💡 Nice to know:** einfache Notizen (Überschrift + Notiz) mit optionaler
+  **Rubrik** (alphabetisch).
+- **🍵 Gossip:** Überschrift + Notiz + **Level** (Steigerung) + optionale **Area**
+  (alphabetisch) sowie **Kommentare** je Eintrag.
+- **Weiteres:** Sperren (🔒), wiederkehrende Termine, Anhänge & Links,
+  Standortnavigation (Google/Apple Maps), Konflikterkennung, Filter &
+  Volltextsuche, Benachrichtigungen, ICS-Export (Outlook/Google/Apple).
+- **Dark Mode** (Standard) + Light Mode; Hauptfarbe Dunkelblau. Kompakte,
+  platzsparende Darstellung.
+- **Auswahllisten** sind alphabetisch sortiert; eine Leer-Option steht immer oben.
+
+> Alle Listen (Termine, Aufgaben, Einkauf, Nice to know, Gossip) liegen pro Konto
+> in der Cloud und **synchronisieren live über alle Geräte** (gleicher Account).
 
 ## Tech-Stack
 React 18 + Vite 5 · PWA (`vite-plugin-pwa`) · Supabase (Postgres `kv` + Realtime, RLS je `user_id`).

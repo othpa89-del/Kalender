@@ -128,7 +128,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 700 }}>
                   {conflict && <span title="Überschneidung" style={{ fontSize: 11, flex: "none" }}>⚠️</span>}
-                  <span style={{ flex: "none" }}>{type ? type.icon : "📌"}</span>
+                  <span style={{ flex: "none" }}>{(type && type.icon) || ev.icon || "📌"}</span>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{ev.title}</span>
                   {ev.locked && <span style={{ fontSize: 10 }}>🔒</span>}
                   <UserAvatar user={creator} size={18} />
@@ -350,11 +350,13 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect, onGoAgenda
   const tasksDone = tasks.filter((x) => x.done).length;
 
   const Card = ({ title, count, icon, sub }) => (
-    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: "12px 14px", flex: "1 1 130px" }}>
-      <div style={{ fontSize: 22 }}>{icon}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: t.text, lineHeight: 1.1, marginTop: 2 }}>{count}</div>
-      <div style={{ fontSize: 12, color: t.muted, fontWeight: 600 }}>{title}</div>
-      {sub && <div style={{ fontSize: 11, color: t.faint }}>{sub}</div>}
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 11, padding: "9px 11px", flex: "1 1 110px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span style={{ fontSize: 15 }}>{icon}</span>
+        <span style={{ fontSize: 21, fontWeight: 800, color: t.text, lineHeight: 1.1 }}>{count}</span>
+      </div>
+      <div style={{ fontSize: 11.5, color: t.muted, fontWeight: 700, marginTop: 1 }}>{title}</div>
+      {sub && <div style={{ fontSize: 10.5, color: t.faint }}>{sub}</div>}
     </div>
   );
 
@@ -376,10 +378,10 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect, onGoAgenda
 
   return (
     <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
         <Card title="Heute" count={todays.length} icon="📅" />
         <Card title="Nächste 7 Tage" count={next7.length} icon="🗓️" />
-        <Card title="Geschäftlich" count={bizCount} icon="🏢" sub={`Privat: ${privCount}`} />
+        <Card title="Privat" count={privCount} icon="🏠" sub={`Geschäftlich: ${bizCount}`} />
         <Card title="Aufgaben offen" count={tasksOpen} icon="✅" sub={`Erledigt: ${tasksDone}`} />
       </div>
 
