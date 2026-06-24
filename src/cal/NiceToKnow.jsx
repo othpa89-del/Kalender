@@ -28,7 +28,21 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   const [text, setText] = useState("");
   const [rubrik, setRubrik] = useState("");
   const [editId, setEditId] = useState(null);
+  const [fRubrik, setFRubrik] = useState("all");
+  const [sort, setSort] = useState("new");
   const sel = inputStyle(t);
+  const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
+
+  // Reihenfolge der Rubriken für die Sortierung "Nach Rubrik"
+  const rubrikOrder = (id) => { const i = NTK_RUBRIKEN.findIndex((r) => r.id === (id || "")); return i < 0 ? 99 : i; };
+  const visible = items
+    .filter((x) => fRubrik === "all" ? true : fRubrik === "none" ? !x.rubrik : x.rubrik === fRubrik)
+    .slice()
+    .sort((a, b) => {
+      if (sort === "az") return (a.title || "").localeCompare(b.title || "", "de");
+      if (sort === "rubrik") return (rubrikOrder(a.rubrik) - rubrikOrder(b.rubrik)) || ((b.createdAt || 0) - (a.createdAt || 0));
+      return (b.createdAt || 0) - (a.createdAt || 0); // Neueste zuerst
+    });
 
   function reset() { setTitle(""); setText(""); setRubrik(""); setEditId(null); }
   function save() {
@@ -73,15 +87,41 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
         </div>
       </div>
 
+      {/* Filter & Sortierung */}
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 150px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Rubrik</span>
+            <select style={ctrl} value={fRubrik} onChange={(e) => setFRubrik(e.target.value)}>
+              <option value="all">Alle Rubriken</option>
+              <option value="none">– ohne Rubrik –</option>
+              {NTK_RUBRIKEN.filter((r) => r.id).map((r) => (
+                <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 150px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Sortieren</span>
+            <select style={ctrl} value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="new">Neueste zuerst</option>
+              <option value="az">A–Z (Überschrift)</option>
+              <option value="rubrik">Nach Rubrik</option>
+            </select>
+          </label>
+        </div>
+      )}
+
       {/* Liste */}
       {items.length === 0 ? (
         <div style={{ textAlign: "center", color: t.faint, padding: "40px 16px", fontSize: 14 }}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>💡</div>
           Noch keine Notizen. Oben etwas eintragen.
         </div>
+      ) : visible.length === 0 ? (
+        <div style={{ color: t.faint, padding: "20px 4px", fontSize: 14 }}>Keine Notizen in dieser Rubrik.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {items.map((x) => {
+          {visible.map((x) => {
             const r = rubrikById(x.rubrik);
             const who = ctx.userById && ctx.userById(x.addedBy);
             return (
