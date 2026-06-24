@@ -1,13 +1,13 @@
 // ===========================================================================
 //  views.jsx – Tag / Woche / Monat / Agenda / Dashboard
 // ===========================================================================
-import React from "react";
+import React, { useState } from "react";
 import {
   WEEKDAYS, WEEKDAYS_LONG, MONTHS, PRIORITIES,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
 } from "./data.js";
-import { EventChip, MiniEvent, Dot, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
+import { EventChip, Dot, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
 
 // Leeransicht
 function Empty({ t, text }) {
@@ -206,49 +206,89 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 // ---------------------------------------------------------------------
 //  MONATSANSICHT
 // ---------------------------------------------------------------------
+// Übersichtliches Raster mit farbigen Punkten je Termin + Liste des
+// angetippten Tages darunter (Monat im Blick, Details ohne Ansichtswechsel).
 export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const cur = parseISODate(dateISO);
   const year = cur.getFullYear(), month = cur.getMonth();
   const grid = monthGrid(year, month);
   const today = todayISO();
-  // schnelle Lookup-Map
   const byDay = {};
   for (const e of occ) (byDay[e.date] = byDay[e.date] || []).push(e);
 
+  // Ausgewählter Tag: heute (falls im Monat), sonst der Monatserste.
+  const todayD = parseISODate(today);
+  const todayInMonth = todayD.getMonth() === month && todayD.getFullYear() === year;
+  const firstISO = toISODate(new Date(year, month, 1));
+  const [selected, setSelected] = useState(todayInMonth ? today : firstISO);
+  // Auswahl an den sichtbaren Monat anpassen, wenn weitergeblättert wird.
+  const selInMonth = parseISODate(selected).getMonth() === month && parseISODate(selected).getFullYear() === year;
+  const selDay = selInMonth ? selected : (todayInMonth ? today : firstISO);
+  const selItems = byDay[selDay] || [];
+  const selConf = dayConflictSet(selItems);
+
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 4 }}>
-        {WEEKDAYS.map((w) => (
-          <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: t.muted, padding: "2px 0" }}>{w}</div>
+      {/* Wochentagskopf */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 6 }}>
+        {WEEKDAYS.map((w, i) => (
+          <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 800, color: i >= 5 ? "#E5739A" : t.muted }}>{w}</div>
         ))}
       </div>
+
+      {/* Tagesraster mit Punkten */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
         {grid.map((d) => {
           const iso = toISODate(d);
           const inMonth = d.getMonth() === month;
           const isToday = iso === today;
+          const isSel = iso === selDay;
+          const wd = (d.getDay() + 6) % 7;
           const items = byDay[iso] || [];
-          const conflicts = dayConflictSet(items);
+          const dots = items.slice(0, 3);
           return (
-            <div key={iso} onClick={() => onPickDay(iso)} style={{
-              background: isToday ? t.todayBg : inMonth ? t.surface : t.surface2,
-              border: `1px solid ${isToday ? t.accent : t.border}`, borderRadius: 8,
-              minHeight: 78, padding: 4, cursor: "pointer", overflow: "hidden",
-              opacity: inMonth ? 1 : 0.55,
+            <button key={iso} onClick={() => setSelected(iso)} style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              minHeight: 50, padding: "5px 2px", cursor: "pointer", overflow: "hidden",
+              fontFamily: "inherit",
+              background: isSel ? hexA(t.accent, t.mode === "dark" ? 0.22 : 0.12) : isToday ? t.todayBg : "transparent",
+              border: `1px solid ${isSel ? t.accent : isToday ? t.accent : "transparent"}`,
+              borderRadius: 10, opacity: inMonth ? 1 : 0.35,
             }}>
-              <div style={{
-                fontSize: 12, fontWeight: isToday ? 800 : 600,
-                color: isToday ? t.accent : t.text, textAlign: "right", marginBottom: 2,
-              }}>{d.getDate()}</div>
-              {items.slice(0, 3).map((ev, i) => (
-                <MiniEvent key={ev.id + i} t={t} ev={ev} ctx={ctx} conflict={conflicts.has(ev.id)} onClick={(e) => { e.stopPropagation(); onSelect(ev); }} />
-              ))}
-              {items.length > 3 && (
-                <div style={{ fontSize: 9.5, color: t.muted, fontWeight: 700, paddingLeft: 2 }}>+{items.length - 3}</div>
-              )}
-            </div>
+              <span style={{
+                width: 25, height: 25, lineHeight: "25px", borderRadius: "50%", fontSize: 13, textAlign: "center",
+                fontWeight: isToday || isSel ? 800 : 600,
+                background: isToday ? t.accent : "transparent",
+                color: isToday ? "#fff" : wd >= 5 ? "#E5739A" : t.text,
+              }}>{d.getDate()}</span>
+              <span style={{ display: "flex", gap: 3, alignItems: "center", height: 6 }}>
+                {dots.map((ev, i) => {
+                  const area = ctx.areaById(ev.areaId);
+                  return <span key={ev.id + i} style={{ width: 6, height: 6, borderRadius: "50%", background: area ? area.color : t.faint }} />;
+                })}
+                {items.length > 3 && <span style={{ fontSize: 8, fontWeight: 800, color: t.muted, lineHeight: "6px" }}>+{items.length - 3}</span>}
+              </span>
+            </button>
           );
         })}
+      </div>
+
+      {/* Termine des ausgewählten Tages */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: selDay === today ? t.accent : t.text }}>{fmtDateLong(selDay)}</span>
+          {selDay === today && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: t.accent, borderRadius: 6, padding: "1px 7px" }}>Heute</span>}
+          <button onClick={() => onPickDay(selDay)} style={{ marginLeft: "auto", background: "none", border: "none", color: t.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Tagesansicht ›</button>
+        </div>
+        {selItems.length === 0 ? (
+          <div style={{ fontSize: 13, color: t.faint, padding: "8px 0" }}>Keine Termine an diesem Tag.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {selItems.map((ev, i) => (
+              <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} conflict={selConf.has(ev.id)} onClick={() => onSelect(ev)} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

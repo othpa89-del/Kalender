@@ -9,11 +9,12 @@ import {
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid,
   fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
-import { Toast, Btn, Segmented, Dot } from "./cal/components.jsx";
-import { DayView, WeekView, MonthView, AgendaView, Dashboard } from "./cal/views.jsx";
+import { Toast, Btn, Dot } from "./cal/components.jsx";
+import { DayView, WeekView, MonthView, Dashboard } from "./cal/views.jsx";
 import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
 import { Tasks } from "./cal/Tasks.jsx";
+import { Shopping } from "./cal/Shopping.jsx";
 
 // ---- persistente Schlüssel ----------------------------------------------
 // Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
@@ -22,7 +23,7 @@ const K_USERS = "cal_users", K_AREAS = "cal_areas", K_TYPES = "cal_types",
 // Termine & Aufgaben als EINZELNE Zeilen je Element (Präfix) -> robuste
 // Mehrgeräte-Sync: gleichzeitige Änderungen an verschiedenen Einträgen
 // überschreiben sich NICHT gegenseitig (kein Last-Write-Wins auf der Gesamtliste).
-const P_EVENT = "cal_event:", P_TASK = "cal_task:";
+const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:";
 // Legacy-Blobs (frühere Versionen) – werden einmalig migriert:
 const K_EVENTS_LEGACY = "cal_events", K_TASKS_LEGACY = "cal_tasks";
 
@@ -74,6 +75,7 @@ export default function App() {
   const [types, setTypes] = useState(DEFAULT_EVENT_TYPES);
   const [events, setEvents] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [shopping, setShopping] = useState([]);
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
 
@@ -98,6 +100,7 @@ export default function App() {
   // letzter persistierter Stand (für Diff-Persistenz pro Element)
   const eventsRef = useRef([]);
   const tasksRef = useRef([]);
+  const shoppingRef = useRef([]);
 
   const t = theme(settings.themeMode);
 
@@ -116,6 +119,7 @@ export default function App() {
       ]);
       let ev = await loadCollection(P_EVENT);
       let tk = await loadCollection(P_TASK);
+      const sh = await loadCollection(P_SHOP);
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
       if (ev.length === 0) {
         const legacy = await loadJSON(K_EVENTS_LEGACY, []);
@@ -152,6 +156,7 @@ export default function App() {
       }
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
+      shoppingRef.current = sh; setShopping(sh);
       if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
     })();
@@ -166,11 +171,13 @@ export default function App() {
       ]);
       const ev = await loadCollection(P_EVENT);
       const tk = await loadCollection(P_TASK);
+      const sh = await loadCollection(P_SHOP);
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
+      shoppingRef.current = sh; setShopping(sh);
       if (st) setSettings((s) => ({ ...s, ...st }));
     };
     window.addEventListener("ctc:remote", h);
@@ -185,6 +192,7 @@ export default function App() {
     types: (next) => { setTypes(next); saveJSON(K_TYPES, next); },
     events: (next) => { persistDiff(P_EVENT, eventsRef.current, next); eventsRef.current = next; setEvents(next); },
     tasks: (next) => { persistDiff(P_TASK, tasksRef.current, next); tasksRef.current = next; setTasks(next); },
+    shopping: (next) => { persistDiff(P_SHOP, shoppingRef.current, next); shoppingRef.current = next; setShopping(next); },
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
@@ -355,10 +363,10 @@ export default function App() {
     { id: "day", label: "Tag" },
     { id: "week", label: "Woche" },
     { id: "month", label: "Monat" },
-    { id: "agenda", label: "Agenda" },
     { id: "tasks", label: "Aufgaben" },
+    { id: "shopping", label: "Einkauf" },
   ];
-  const showNav = ["day", "week", "month", "agenda"].includes(view);
+  const showNav = ["day", "week", "month"].includes(view);
 
   return (
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90 }}>
@@ -417,8 +425,8 @@ export default function App() {
       </header>
 
       <main style={{ maxWidth: 980, margin: "0 auto", padding: "14px 12px" }}>
-        {/* ===== Schnellanlage ===== */}
-        {view !== "tasks" && (
+        {/* ===== Schnellanlage (nur auf der Startseite) ===== */}
+        {view === "dashboard" && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>SCHNELLANLAGE</span>
@@ -439,7 +447,7 @@ export default function App() {
         )}
 
         {/* ===== Suche & Filter ===== */}
-        {view !== "tasks" && (
+        {view !== "tasks" && view !== "shopping" && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche in Titel, Beschreibung, Ort…"
@@ -472,38 +480,29 @@ export default function App() {
         {/* ===== Datums-Navigation ===== */}
         {showNav && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-            {view !== "agenda" && <>
-              <Btn t={t} kind="soft" onClick={() => navStep(-1)}>‹</Btn>
-              <Btn t={t} kind="soft" onClick={goToday}>Heute</Btn>
-              <Btn t={t} kind="soft" onClick={() => navStep(1)}>›</Btn>
-            </>}
+            <Btn t={t} kind="soft" onClick={() => navStep(-1)}>‹</Btn>
+            <Btn t={t} kind="soft" onClick={goToday}>Heute</Btn>
+            <Btn t={t} kind="soft" onClick={() => navStep(1)}>›</Btn>
             <span style={{ fontWeight: 800, fontSize: 15, color: t.text }}>{headerTitle}</span>
-            {view === "agenda" && (
-              <div style={{ marginLeft: "auto" }}>
-                <Segmented t={t} small value={agendaPeriod} onChange={setAgendaPeriod} options={[
-                  { id: "today", label: "Heute" }, { id: "week", label: "Woche" }, { id: "month", label: "Monat" },
-                ]} />
-              </div>
-            )}
           </div>
         )}
 
         {/* ===== Ansicht ===== */}
         {view === "dashboard" && (
           <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks}
-            onSelect={openEvent} onGoAgenda={() => setView("agenda")} />
+            onSelect={openEvent} onGoAgenda={() => setView("month")} />
         )}
         {view === "day" && <DayView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent} />}
         {view === "week" && <WeekView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
         {view === "month" && <MonthView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
-        {view === "agenda" && <AgendaView t={t} ctx={ctx} occ={occ} onSelect={openEvent} />}
         {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
+        {view === "shopping" && <Shopping t={t} items={shopping} setItems={persist.shopping} />}
       </main>
 
       {/* ===== Neuer-Termin-Button ===== */}
-      {view !== "tasks" && (
+      {view !== "tasks" && view !== "shopping" && (
         <button onClick={() => openNew()} aria-label="Neuer Termin" style={{
           position: "fixed", right: "calc(16px + env(safe-area-inset-right))",
           bottom: "calc(16px + env(safe-area-inset-bottom))", zIndex: 90,
