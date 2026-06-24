@@ -92,6 +92,12 @@ export const REMINDER_OPTIONS = [
   { id: "d1", name: "1 Tag vorher", minutes: 1440 },
 ];
 
+// --- Häufige Einkaufs-Artikel (Standard; in der App frei änderbar) ------
+export const DEFAULT_SHOP_FAVS = [
+  "Milch", "Brot", "Eier", "Butter", "Käse", "Joghurt",
+  "Bananen", "Äpfel", "Tomaten", "Kaffee", "Nudeln", "Klopapier",
+];
+
 // --- Schnellanlage-Vorlagen -------------------------------------------
 // Eine Kachel setzt beim Antippen Titel UND Icon des Termins. Priorität,
 // Bereich, Terminart wählt man bewusst selbst. Alphabetisch sortiert.
