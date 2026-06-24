@@ -17,7 +17,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
     if (editId) {
       setTasks(tasks.map((x) => (x.id === editId ? { ...x, ...f } : x)));
     } else {
-      setTasks([...tasks, { ...f, id: uid("task"), done: false, createdAt: Date.now() }]);
+      setTasks([...tasks, { ...f, id: uid("task"), done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }]);
     }
     setF(blankTask(ctx)); setEditId(null);
   }
@@ -88,6 +88,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
           {visible.map((x) => {
             const prio = priorityById(x.priority);
             const who = ctx.userById(x.assigneeId);
+            const creator = ctx.userById(x.addedBy);
             const overdue = x.due && !x.done && x.due < todayISO();
             return (
               <div key={x.id} style={{
@@ -104,8 +105,9 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
                   {x.description && <div style={{ fontSize: 12.5, color: t.muted, marginTop: 2 }}>{x.description}</div>}
                   <div style={{ display: "flex", gap: 10, marginTop: 5, flexWrap: "wrap", fontSize: 11.5, color: t.muted }}>
                     {x.due && <span style={{ color: overdue ? "#E53935" : t.muted, fontWeight: overdue ? 800 : 600 }}>📅 {fmtDateShort(x.due)}{overdue ? " (überfällig)" : ""}</span>}
-                    {who && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Dot color={who.color} size={9} />{who.name}</span>}
+                    {who && <span title="Verantwortlich" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Dot color={who.color} size={9} />{who.name}</span>}
                     <span>{prio.dot} {prio.name}</span>
+                    {creator && <span title="Eingetragen von" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>✎ <Dot color={creator.color} size={9} />{creator.name}</span>}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 4, flex: "none" }}>

@@ -4,7 +4,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import { uid } from "./data.js";
-import { Field, inputStyle, Btn } from "./components.jsx";
+import { Field, inputStyle, Btn, Dot } from "./components.jsx";
 
 // Rubriken: alphabetisch, Leer-Option immer ganz oben.
 export const NTK_RUBRIKEN = [
@@ -23,7 +23,7 @@ export const NTK_RUBRIKEN = [
 ];
 const rubrikById = (id) => NTK_RUBRIKEN.find((r) => r.id === id);
 
-export function NiceToKnow({ t, items, setItems }) {
+export function NiceToKnow({ t, ctx, items, setItems }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [rubrik, setRubrik] = useState("");
@@ -36,7 +36,7 @@ export function NiceToKnow({ t, items, setItems }) {
     if (editId) {
       setItems(items.map((x) => (x.id === editId ? { ...x, title: title.trim(), text: text.trim(), rubrik } : x)));
     } else {
-      setItems([{ id: uid("note"), title: title.trim(), text: text.trim(), rubrik, createdAt: Date.now() }, ...items]);
+      setItems([{ id: uid("note"), title: title.trim(), text: text.trim(), rubrik, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
     }
     reset();
   }
@@ -83,6 +83,7 @@ export function NiceToKnow({ t, items, setItems }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {items.map((x) => {
             const r = rubrikById(x.rubrik);
+            const who = ctx.userById && ctx.userById(x.addedBy);
             return (
               <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -93,6 +94,11 @@ export function NiceToKnow({ t, items, setItems }) {
                       <span style={{ display: "inline-block", marginTop: 8, fontSize: 12, fontWeight: 700, color: t.text, background: t.chip, border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "3px 10px" }}>
                         {r.icon} {r.name}
                       </span>
+                    )}
+                    {who && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12, color: t.muted }}>
+                        <Dot color={who.color} size={9} /> {who.name}
+                      </div>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 4, flex: "none" }}>

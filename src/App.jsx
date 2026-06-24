@@ -519,8 +519,8 @@ export default function App() {
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
         {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
         {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} />}
-        {view === "notes" && <NiceToKnow t={t} items={notes} setItems={persist.notes} />}
-        {view === "gossip" && <Gossip t={t} items={gossip} setItems={persist.gossip} />}
+        {view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
+        {view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
       </main>
 
       {/* ===== Neuer-Termin-Button ===== */}

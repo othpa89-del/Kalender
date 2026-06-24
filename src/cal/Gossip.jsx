@@ -4,7 +4,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import { uid } from "./data.js";
-import { Field, inputStyle, Btn } from "./components.jsx";
+import { Field, inputStyle, Btn, Dot } from "./components.jsx";
 
 // Level = bewusste Steigerung (keine Alphabet-Sortierung); Leer-Option oben.
 export const GOSSIP_LEVELS = [
@@ -28,7 +28,7 @@ export const GOSSIP_AREAS = [
 ];
 const areaById = (id) => GOSSIP_AREAS.find((a) => a.id === id);
 
-export function Gossip({ t, items, setItems }) {
+export function Gossip({ t, ctx, items, setItems }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [level, setLevel] = useState("");
@@ -43,7 +43,7 @@ export function Gossip({ t, items, setItems }) {
     if (editId) {
       setItems(items.map((x) => (x.id === editId ? { ...x, title: title.trim(), text: text.trim(), level, area } : x)));
     } else {
-      setItems([{ id: uid("gossip"), title: title.trim(), text: text.trim(), level, area, comments: [], createdAt: Date.now() }, ...items]);
+      setItems([{ id: uid("gossip"), title: title.trim(), text: text.trim(), level, area, comments: [], addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
     }
     reset();
   }
@@ -54,7 +54,7 @@ export function Gossip({ t, items, setItems }) {
     const v = (cDraft[id] || "").trim();
     if (!v) return;
     setItems(items.map((x) => (x.id === id
-      ? { ...x, comments: [...(x.comments || []), { id: uid("c"), text: v, createdAt: Date.now() }] }
+      ? { ...x, comments: [...(x.comments || []), { id: uid("c"), text: v, addedBy: ctx.activeUserId, createdAt: Date.now() }] }
       : x)));
     setCDraft((d) => ({ ...d, [id]: "" }));
   }
@@ -116,6 +116,7 @@ export function Gossip({ t, items, setItems }) {
           {items.map((x) => {
             const lv = levelById(x.level);
             const ar = areaById(x.area);
+            const who = ctx.userById && ctx.userById(x.addedBy);
             const comments = x.comments || [];
             return (
               <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderLeft: `4px solid ${lv && lv.id ? lv.color : t.border}`, borderRadius: 12, padding: "12px 14px" }}>
@@ -130,6 +131,11 @@ export function Gossip({ t, items, setItems }) {
                       {ar && ar.id && (
                         <span style={{ fontSize: 12, fontWeight: 700, color: t.text, background: t.chip, border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "3px 10px" }}>{ar.icon} {ar.name}</span>
                       )}
+                      {who && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: t.muted }}>
+                          <Dot color={who.color} size={9} /> {who.name}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 4, flex: "none" }}>
@@ -142,14 +148,19 @@ export function Gossip({ t, items, setItems }) {
                 <div style={{ marginTop: 10, borderTop: `1px solid ${t.borderSoft}`, paddingTop: 8 }}>
                   {comments.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-                      {comments.map((c) => (
-                        <div key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, color: t.text }}>
-                          <span style={{ color: t.faint, flex: "none" }}>💬</span>
-                          <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.text}</span>
-                          <button onClick={() => removeComment(x.id, c.id)} aria-label="Kommentar löschen"
-                            style={{ background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1 }}>×</button>
-                        </div>
-                      ))}
+                      {comments.map((c) => {
+                        const cWho = ctx.userById && ctx.userById(c.addedBy);
+                        return (
+                          <div key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, color: t.text }}>
+                            {cWho
+                              ? <span title={cWho.name} style={{ flex: "none", marginTop: 3 }}><Dot color={cWho.color} size={9} /></span>
+                              : <span style={{ color: t.faint, flex: "none" }}>💬</span>}
+                            <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.text}</span>
+                            <button onClick={() => removeComment(x.id, c.id)} aria-label="Kommentar löschen"
+                              style={{ background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1 }}>×</button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                   <div style={{ display: "flex", gap: 6 }}>
