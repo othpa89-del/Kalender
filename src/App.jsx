@@ -15,6 +15,7 @@ import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
 import { Tasks } from "./cal/Tasks.jsx";
 import { Shopping } from "./cal/Shopping.jsx";
+import { NiceToKnow } from "./cal/NiceToKnow.jsx";
 
 // ---- persistente Schlüssel ----------------------------------------------
 // Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
@@ -23,7 +24,7 @@ const K_USERS = "cal_users", K_AREAS = "cal_areas", K_TYPES = "cal_types",
 // Termine & Aufgaben als EINZELNE Zeilen je Element (Präfix) -> robuste
 // Mehrgeräte-Sync: gleichzeitige Änderungen an verschiedenen Einträgen
 // überschreiben sich NICHT gegenseitig (kein Last-Write-Wins auf der Gesamtliste).
-const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:";
+const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:", P_NOTE = "cal_note:";
 // Legacy-Blobs (frühere Versionen) – werden einmalig migriert:
 const K_EVENTS_LEGACY = "cal_events", K_TASKS_LEGACY = "cal_tasks";
 
@@ -76,6 +77,7 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [shopping, setShopping] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
 
@@ -101,6 +103,7 @@ export default function App() {
   const eventsRef = useRef([]);
   const tasksRef = useRef([]);
   const shoppingRef = useRef([]);
+  const notesRef = useRef([]);
 
   const t = theme(settings.themeMode);
 
@@ -120,6 +123,7 @@ export default function App() {
       let ev = await loadCollection(P_EVENT);
       let tk = await loadCollection(P_TASK);
       const sh = await loadCollection(P_SHOP);
+      const nt = await loadCollection(P_NOTE);
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
       if (ev.length === 0) {
         const legacy = await loadJSON(K_EVENTS_LEGACY, []);
@@ -157,6 +161,7 @@ export default function App() {
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
+      notesRef.current = nt; setNotes(nt);
       if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
     })();
@@ -172,12 +177,14 @@ export default function App() {
       const ev = await loadCollection(P_EVENT);
       const tk = await loadCollection(P_TASK);
       const sh = await loadCollection(P_SHOP);
+      const nt = await loadCollection(P_NOTE);
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
+      notesRef.current = nt; setNotes(nt);
       if (st) setSettings((s) => ({ ...s, ...st }));
     };
     window.addEventListener("ctc:remote", h);
@@ -193,6 +200,7 @@ export default function App() {
     events: (next) => { persistDiff(P_EVENT, eventsRef.current, next); eventsRef.current = next; setEvents(next); },
     tasks: (next) => { persistDiff(P_TASK, tasksRef.current, next); tasksRef.current = next; setTasks(next); },
     shopping: (next) => { persistDiff(P_SHOP, shoppingRef.current, next); shoppingRef.current = next; setShopping(next); },
+    notes: (next) => { persistDiff(P_NOTE, notesRef.current, next); notesRef.current = next; setNotes(next); },
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
@@ -365,8 +373,10 @@ export default function App() {
     { id: "month", label: "Monat" },
     { id: "tasks", label: "Aufgaben" },
     { id: "shopping", label: "Einkauf" },
+    { id: "notes", label: "Nice to know" },
   ];
   const showNav = ["day", "week", "month"].includes(view);
+  const isList = ["tasks", "shopping", "notes"].includes(view); // eigene Eingabe, kein Termin-Toolbar
 
   return (
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90 }}>
@@ -447,7 +457,7 @@ export default function App() {
         )}
 
         {/* ===== Suche & Filter ===== */}
-        {view !== "tasks" && view !== "shopping" && (
+        {!isList && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche in Titel, Beschreibung, Ort…"
@@ -498,11 +508,12 @@ export default function App() {
         {view === "month" && <MonthView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
         {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
-        {view === "shopping" && <Shopping t={t} items={shopping} setItems={persist.shopping} />}
+        {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} />}
+        {view === "notes" && <NiceToKnow t={t} items={notes} setItems={persist.notes} />}
       </main>
 
       {/* ===== Neuer-Termin-Button ===== */}
-      {view !== "tasks" && view !== "shopping" && (
+      {!isList && (
         <button onClick={() => openNew()} aria-label="Neuer Termin" style={{
           position: "fixed", right: "calc(16px + env(safe-area-inset-right))",
           bottom: "calc(16px + env(safe-area-inset-bottom))", zIndex: 90,
