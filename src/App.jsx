@@ -16,6 +16,7 @@ import { Admin } from "./cal/Admin.jsx";
 import { Tasks } from "./cal/Tasks.jsx";
 import { Shopping } from "./cal/Shopping.jsx";
 import { NiceToKnow } from "./cal/NiceToKnow.jsx";
+import { Gossip } from "./cal/Gossip.jsx";
 
 // ---- persistente Schlüssel ----------------------------------------------
 // Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
@@ -24,7 +25,7 @@ const K_USERS = "cal_users", K_AREAS = "cal_areas", K_TYPES = "cal_types",
 // Termine & Aufgaben als EINZELNE Zeilen je Element (Präfix) -> robuste
 // Mehrgeräte-Sync: gleichzeitige Änderungen an verschiedenen Einträgen
 // überschreiben sich NICHT gegenseitig (kein Last-Write-Wins auf der Gesamtliste).
-const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:", P_NOTE = "cal_note:";
+const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:", P_NOTE = "cal_note:", P_GOSSIP = "cal_gossip:";
 // Legacy-Blobs (frühere Versionen) – werden einmalig migriert:
 const K_EVENTS_LEGACY = "cal_events", K_TASKS_LEGACY = "cal_tasks";
 
@@ -78,6 +79,7 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [shopping, setShopping] = useState([]);
   const [notes, setNotes] = useState([]);
+  const [gossip, setGossip] = useState([]);
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
 
@@ -104,6 +106,7 @@ export default function App() {
   const tasksRef = useRef([]);
   const shoppingRef = useRef([]);
   const notesRef = useRef([]);
+  const gossipRef = useRef([]);
 
   const t = theme(settings.themeMode);
 
@@ -124,6 +127,7 @@ export default function App() {
       let tk = await loadCollection(P_TASK);
       const sh = await loadCollection(P_SHOP);
       const nt = await loadCollection(P_NOTE);
+      const go = await loadCollection(P_GOSSIP);
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
       if (ev.length === 0) {
         const legacy = await loadJSON(K_EVENTS_LEGACY, []);
@@ -162,6 +166,7 @@ export default function App() {
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
       notesRef.current = nt; setNotes(nt);
+      gossipRef.current = go; setGossip(go);
       if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
     })();
@@ -178,6 +183,7 @@ export default function App() {
       const tk = await loadCollection(P_TASK);
       const sh = await loadCollection(P_SHOP);
       const nt = await loadCollection(P_NOTE);
+      const go = await loadCollection(P_GOSSIP);
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
@@ -185,6 +191,7 @@ export default function App() {
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
       notesRef.current = nt; setNotes(nt);
+      gossipRef.current = go; setGossip(go);
       if (st) setSettings((s) => ({ ...s, ...st }));
     };
     window.addEventListener("ctc:remote", h);
@@ -201,6 +208,7 @@ export default function App() {
     tasks: (next) => { persistDiff(P_TASK, tasksRef.current, next); tasksRef.current = next; setTasks(next); },
     shopping: (next) => { persistDiff(P_SHOP, shoppingRef.current, next); shoppingRef.current = next; setShopping(next); },
     notes: (next) => { persistDiff(P_NOTE, notesRef.current, next); notesRef.current = next; setNotes(next); },
+    gossip: (next) => { persistDiff(P_GOSSIP, gossipRef.current, next); gossipRef.current = next; setGossip(next); },
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
@@ -374,9 +382,10 @@ export default function App() {
     { id: "tasks", label: "Aufgaben" },
     { id: "shopping", label: "Einkauf" },
     { id: "notes", label: "Nice to know" },
+    { id: "gossip", label: "Gossip" },
   ];
   const showNav = ["day", "week", "month"].includes(view);
-  const isList = ["tasks", "shopping", "notes"].includes(view); // eigene Eingabe, kein Termin-Toolbar
+  const isList = ["tasks", "shopping", "notes", "gossip"].includes(view); // eigene Eingabe, kein Termin-Toolbar
 
   return (
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90 }}>
@@ -510,6 +519,7 @@ export default function App() {
         {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
         {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} />}
         {view === "notes" && <NiceToKnow t={t} items={notes} setItems={persist.notes} />}
+        {view === "gossip" && <Gossip t={t} items={gossip} setItems={persist.gossip} />}
       </main>
 
       {/* ===== Neuer-Termin-Button ===== */}
