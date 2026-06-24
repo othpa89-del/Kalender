@@ -235,13 +235,13 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         {rec.freq && rec.freq !== "none" && (
           <div style={{ background: t.surface2, border: `1px solid ${t.borderSoft}`, borderRadius: 9, padding: 11, marginBottom: 12 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-              <div style={{ flex: "1 1 100px" }}>
+              <div style={{ flex: "1 1 100px", minWidth: 0 }}>
                 <Field t={t} label="Alle">
                   <input type="number" min={1} style={sel} value={rec.interval || 1} onChange={(e) => setRec("interval", Number(e.target.value))} />
                 </Field>
               </div>
               {rec.freq === "custom" && (
-                <div style={{ flex: "1 1 120px" }}>
+                <div style={{ flex: "1 1 120px", minWidth: 0 }}>
                   <Field t={t} label="Einheit">
                     <select style={sel} value={rec.unit || "day"} onChange={(e) => setRec("unit", e.target.value)}>
                       <option value="">– bitte wählen –</option>
@@ -253,7 +253,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                   </Field>
                 </div>
               )}
-              <div style={{ flex: "1 1 140px" }}>
+              <div style={{ flex: "1 1 140px", minWidth: 0 }}>
                 <Field t={t} label="Bis (optional)">
                   <input type="date" style={sel} value={rec.until || ""} onChange={(e) => setRec("until", e.target.value)} />
                 </Field>

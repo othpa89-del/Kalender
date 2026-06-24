@@ -41,7 +41,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
           <textarea style={{ ...sel, minHeight: 50, resize: "vertical" }} value={f.description} onChange={(e) => set("description", e.target.value)} />
         </Field>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 150px" }}>
+          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Verantwortlich">
               <select style={sel} value={f.assigneeId} onChange={(e) => set("assigneeId", e.target.value)}>
                 <option value="">– niemand –</option>
@@ -49,12 +49,12 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
               </select>
             </Field>
           </div>
-          <div style={{ flex: "1 1 130px" }}>
+          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
             <Field t={t} label="Fällig am">
               <input type="date" style={sel} value={f.due} onChange={(e) => set("due", e.target.value)} />
             </Field>
           </div>
-          <div style={{ flex: "1 1 130px" }}>
+          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
             <Field t={t} label="Priorität">
               <select style={sel} value={f.priority} onChange={(e) => set("priority", e.target.value)}>
                 <option value="">– bitte wählen –</option>
