@@ -11,14 +11,17 @@ import { inputStyle, Btn, Dot } from "./components.jsx";
 // Kategorien (alphabetisch). Beim Hinzufügen wählbar; ohne Auswahl wird per
 // Stichwort automatisch einsortiert.
 const CATEGORIES = [
+  { id: "alkohol", name: "Alkohol", icon: "🍷", keys: ["alkohol","bier","wein","sekt","prosecco","schnaps","wodka","vodka","whisky","whiskey","gin","rum","aperol","spritzer","likör","radler","weinbrand","jägermeister"] },
   { id: "backwaren", name: "Backwaren", icon: "🥖", keys: ["brot","brötchen","semmel","baguette","toast","croissant","kuchen","gebäck","mehl","hefe","weckerl","kipferl"] },
   { id: "drogerie", name: "Drogerie & Haushalt", icon: "🧼", keys: ["zahnpasta","zahnbürste","shampoo","duschgel","seife","klopapier","toilettenpapier","windel","waschmittel","spülmittel","putz","müllbeutel","müllsack","taschentücher","taschentuch","creme","deo","rasier","binden","tampon","watte","papier","schwamm","alufolie","frischhalte"] },
-  { id: "fleisch", name: "Fleisch & Fisch", icon: "🥩", keys: ["fleisch","wurst","schinken","hähnchen","huhn","hühn","rind","schwein","hack","faschiert","speck","salami","steak","schnitzel","fisch","lachs","thunfisch","leberkäse","frankfurter"] },
-  { id: "getränke", name: "Getränke", icon: "🥤", keys: ["wasser","saft","cola","limo","limonade","bier","wein","kaffee","tee","sprudel","getränk","spezi","fanta","sekt","almdudler","mineral"] },
-  { id: "molkerei", name: "Kühlregal & Molkerei", icon: "🧀", keys: ["milch","butter","käse","joghurt","jogurt","quark","sahne","eier","frischkäse","mozzarella","schmand","margarine","pudding","topfen","obers"] },
+  { id: "fleisch", name: "Fleisch & Fisch", icon: "🥩", keys: ["fleisch","hähnchen","huhn","hühn","rind","schwein","hack","faschiert","steak","schnitzel","fisch","lachs","thunfisch","hendl","pute"] },
+  { id: "getränke", name: "Getränke", icon: "🥤", keys: ["wasser","saft","cola","limo","limonade","kaffee","tee","sprudel","getränk","spezi","fanta","almdudler","mineral"] },
+  { id: "molkerei", name: "Kühlregal & Molkerei", icon: "🥛", keys: ["milch","butter","joghurt","jogurt","quark","sahne","eier","schmand","margarine","pudding","topfen","obers"] },
+  { id: "newspaper", name: "Newspaper", icon: "📰", keys: ["newspaper","zeitung","zeitschrift","magazin","krone","kurier","presse"] },
   { id: "obst", name: "Obst & Gemüse", icon: "🥦", keys: ["apfel","äpfel","banane","tomate","gurke","salat","zwiebel","kartoffel","karotte","möhre","paprika","zitrone","orange","beere","erdbeere","traube","birne","brokkoli","spinat","knoblauch","avocado","mango","melone","pilz","champignon","gemüse","obst","zucchini","aubergine","lauch","sellerie","ingwer","zitron","limette","kiwi","pfirsich","kirsche"] },
   { id: "tiefkühl", name: "Tiefkühl", icon: "🧊", keys: ["tiefkühl","pizza","eis","pommes"] },
   { id: "vorrat", name: "Vorrat & Trocken", icon: "🥫", keys: ["nudel","pasta","reis","zucker","salz","öl","essig","konserve","dose","tomatenmark","ketchup","senf","mayo","gewürz","müsli","cornflakes","haferflocken","schokolade","schoko","keks","chips","honig","marmelade","nutella","suppe","knödel","pfeffer"] },
+  { id: "wurstkaese", name: "Wurst & Käse", icon: "🧀", keys: ["wurst","schinken","salami","leberkäse","frankfurter","speck","aufschnitt","extrawurst","käse","frischkäse","mozzarella","gouda","emmentaler","bergkäse","parmesan","leberwurst","bratwurst"] },
 ];
 const OTHER = { id: "sonstiges", name: "Sonstiges", icon: "🛒" };
 const ALL_CATS = [...CATEGORIES, OTHER];
