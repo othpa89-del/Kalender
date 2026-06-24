@@ -149,44 +149,56 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
 // ---------------------------------------------------------------------
 //  WOCHENANSICHT
 // ---------------------------------------------------------------------
+// Vertikale Tagesliste: jeder Wochentag nimmt die volle Breite ein und zeigt
+// seine Termine gut lesbar darunter (mobilfreundlich, nichts wird abgeschnitten).
 export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const ws = startOfWeek(parseISODate(dateISO));
   const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   const today = todayISO();
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 6 }}>
-        {days.map((d) => {
-          const iso = toISODate(d);
-          const items = occ.filter((e) => e.date === iso);
-          const conflicts = dayConflictSet(items);
-          const isToday = iso === today;
-          return (
-            <div key={iso} style={{
-              background: isToday ? t.todayBg : t.surface, border: `1px solid ${isToday ? t.accent : t.border}`,
-              borderRadius: 10, padding: 6, minHeight: 90, display: "flex", flexDirection: "column",
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {days.map((d) => {
+        const iso = toISODate(d);
+        const items = occ.filter((e) => e.date === iso);
+        const conflicts = dayConflictSet(items);
+        const isToday = iso === today;
+        const wd = (d.getDay() + 6) % 7;
+        const weekend = wd >= 5;
+        return (
+          <div key={iso} style={{
+            background: isToday ? t.todayBg : t.surface,
+            border: `1px solid ${isToday ? t.accent : t.border}`,
+            borderRadius: 12, overflow: "hidden",
+          }}>
+            <button onClick={() => onPickDay(iso)} style={{
+              display: "flex", alignItems: "center", gap: 12, width: "100%",
+              background: "transparent", border: "none", cursor: "pointer",
+              padding: "9px 12px", textAlign: "left", fontFamily: "inherit",
+              borderBottom: items.length ? `1px solid ${t.borderSoft}` : "none",
             }}>
-              <button onClick={() => onPickDay(iso)} style={{
-                background: "transparent", border: "none", cursor: "pointer", padding: 0,
-                marginBottom: 6, textAlign: "center", fontFamily: "inherit",
-              }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: t.muted }}>{WEEKDAYS[(d.getDay() + 6) % 7]}</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: isToday ? t.accent : t.text }}>{d.getDate()}</div>
-              </button>
-              <div style={{ flex: 1, overflow: "hidden" }}>
-                {items.slice(0, 6).map((ev, i) => (
-                  <MiniEvent key={ev.id + i} t={t} ev={ev} ctx={ctx} conflict={conflicts.has(ev.id)} onClick={() => onSelect(ev)} />
-                ))}
-                {items.length > 6 && (
-                  <button onClick={() => onPickDay(iso)} style={{
-                    background: "none", border: "none", color: t.muted, fontSize: 10, cursor: "pointer", padding: 2,
-                  }}>+{items.length - 6} mehr</button>
-                )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 42, flex: "none" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? t.accent : weekend ? "#E5739A" : t.muted }}>{WEEKDAYS[wd]}</span>
+                <span style={{ fontSize: 21, fontWeight: 800, color: isToday ? t.accent : t.text, lineHeight: 1.05 }}>{d.getDate()}</span>
               </div>
-            </div>
-          );
-        })}
-      </div>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {WEEKDAYS_LONG[wd]}
+              </span>
+              {isToday && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: t.accent, borderRadius: 6, padding: "1px 7px", flex: "none" }}>Heute</span>}
+              {conflicts.size > 0 && <span title="Überschneidung" style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "#E53935", borderRadius: 6, padding: "1px 6px", flex: "none" }}>⚠️</span>}
+              <span style={{ fontSize: 12.5, color: t.muted, fontWeight: 700, flex: "none", minWidth: 16, textAlign: "right" }}>
+                {items.length || "–"}
+              </span>
+            </button>
+            {items.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 8 }}>
+                {items.map((ev, i) => (
+                  <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} dense conflict={conflicts.has(ev.id)} onClick={() => onSelect(ev)} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
