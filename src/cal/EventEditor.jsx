@@ -29,13 +29,14 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
 
   function validate() {
     if (!f.title.trim()) return "Bitte einen Titel eingeben.";
-    if (!f.date) return "Bitte ein Datum wählen.";
+    if (!f.date) return "Bitte ein Beginn-Datum wählen.";
     if (!f.start || !f.end) return "Bitte Start- und Endzeit angeben.";
-    if (f.end <= f.start) return "Die Endzeit muss nach der Startzeit liegen.";
+    const ed = f.endDate || f.date;
+    if (ed < f.date) return "Das Ende-Datum darf nicht vor dem Beginn liegen.";
+    if (ed === f.date && f.end <= f.start) return "Die Endzeit muss nach der Startzeit liegen.";
     if (!f.creatorId) return "Bitte einen Ersteller wählen.";
     if (!f.areaId) return "Bitte einen Bereich wählen.";
-    if (!f.priority) return "Bitte eine Priorität wählen.";
-    if (!f.typeId) return "Bitte eine Terminart wählen.";
+    // Priorität & Terminart sind optional – nur bei Bedarf.
     return null;
   }
 
@@ -109,18 +110,27 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         </Field>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 140px" }}>
-            <Field t={t} label="Datum" required>
-              <input type="date" style={sel} value={f.date} onChange={(e) => set("date", e.target.value)} />
+          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+            <Field t={t} label="Beginn – Datum" required>
+              <input type="date" style={sel} value={f.date}
+                onChange={(e) => set("date", e.target.value)} />
             </Field>
           </div>
-          <div style={{ flex: "1 1 90px" }}>
-            <Field t={t} label="Start" required>
+          <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+            <Field t={t} label="Beginn – Uhrzeit" required>
               <input type="time" style={sel} value={f.start} onChange={(e) => set("start", e.target.value)} />
             </Field>
           </div>
-          <div style={{ flex: "1 1 90px" }}>
-            <Field t={t} label="Ende" required>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+            <Field t={t} label="Ende – Datum" required hint="Für mehrtägige Termine späteres Datum wählen.">
+              <input type="date" style={sel} value={f.endDate || f.date} min={f.date}
+                onChange={(e) => set("endDate", e.target.value)} />
+            </Field>
+          </div>
+          <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+            <Field t={t} label="Ende – Uhrzeit" required>
               <input type="time" style={sel} value={f.end} onChange={(e) => set("end", e.target.value)} />
             </Field>
           </div>
@@ -137,7 +147,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         )}
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 160px" }}>
+          <div style={{ flex: "1 1 160px", minWidth: 0 }}>
             <Field t={t} label="Ersteller" required>
               <select style={sel} value={f.creatorId} onChange={(e) => set("creatorId", e.target.value)}>
                 <option value="">– bitte wählen –</option>
@@ -145,7 +155,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
               </select>
             </Field>
           </div>
-          <div style={{ flex: "1 1 160px" }}>
+          <div style={{ flex: "1 1 160px", minWidth: 0 }}>
             <Field t={t} label="Bereich / Firma" required>
               <select style={sel} value={f.areaId} onChange={(e) => set("areaId", e.target.value)}>
                 <option value="">– bitte wählen –</option>
@@ -156,18 +166,18 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 160px" }}>
-            <Field t={t} label="Priorität" required>
+          <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+            <Field t={t} label="Priorität (optional)">
               <select style={sel} value={f.priority} onChange={(e) => set("priority", e.target.value)}>
-                <option value="">– bitte wählen –</option>
+                <option value="">– keine –</option>
                 {PRIORITIES.map((p) => <option key={p.id} value={p.id}>{p.dot} {p.name}</option>)}
               </select>
             </Field>
           </div>
-          <div style={{ flex: "1 1 160px" }}>
-            <Field t={t} label="Terminart" required>
+          <div style={{ flex: "1 1 160px", minWidth: 0 }}>
+            <Field t={t} label="Terminart (optional)">
               <select style={sel} value={f.typeId} onChange={(e) => set("typeId", e.target.value)}>
-                <option value="">– bitte wählen –</option>
+                <option value="">– keine –</option>
                 {activeTypes.map((x) => <option key={x.id} value={x.id}>{x.icon} {x.name}</option>)}
               </select>
             </Field>
@@ -281,12 +291,12 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
             <textarea style={{ ...sel, minHeight: 60, resize: "vertical" }} value={f.description || ""} onChange={(e) => set("description", e.target.value)} />
           </Field>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 160px" }}>
+            <div style={{ flex: "1 1 160px", minWidth: 0 }}>
               <Field t={t} label="Ort">
                 <input style={sel} value={f.location || ""} onChange={(e) => set("location", e.target.value)} placeholder="z. B. Büro, Terminal 3" />
               </Field>
             </div>
-            <div style={{ flex: "1 1 160px" }}>
+            <div style={{ flex: "1 1 160px", minWidth: 0 }}>
               <Field t={t} label="Adresse (für Navigation)">
                 <input style={sel} value={f.address || ""} onChange={(e) => set("address", e.target.value)} placeholder="Straße, PLZ Ort" />
               </Field>

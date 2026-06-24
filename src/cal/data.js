@@ -258,13 +258,44 @@ export function expandOccurrences(ev, rangeStartISO, rangeEndISO) {
   return out;
 }
 
-// Alle Termin-Vorkommen in einem Zeitraum (flach, sortiert nach Datum+Start)
+// Anzahl Tage, über die ein Termin läuft (1 = eintägig). endDate ist optional.
+export function eventSpanDays(ev) {
+  if (!ev || !ev.endDate || ev.endDate <= ev.date) return 1;
+  const d1 = parseISODate(ev.date), d2 = parseISODate(ev.endDate);
+  return Math.max(1, Math.round((d2 - d1) / 86400000) + 1);
+}
+
+// Zeitbeschriftung eines (ggf. mehrtägigen) Vorkommens.
+export function occTimeLabel(ev) {
+  if (ev._span && ev._span > 1) {
+    if (ev._spanStart) return `ab ${ev.start}`;
+    if (ev._spanEnd) return `bis ${ev.end}`;
+    return "ganztägig";
+  }
+  return `${ev.start || ""}${ev.end ? `–${ev.end}` : ""}`;
+}
+
+// Alle Termin-Vorkommen in einem Zeitraum (flach, sortiert nach Datum+Start).
+// Mehrtägige Termine erscheinen an JEDEM Tag ihrer Laufzeit innerhalb des Zeitraums.
 export function occurrencesInRange(events, rangeStartISO, rangeEndISO) {
   const out = [];
+  const rs = parseISODate(rangeStartISO), re = parseISODate(rangeEndISO);
   for (const ev of events) {
-    const dates = expandOccurrences(ev, rangeStartISO, rangeEndISO);
-    for (const date of dates) {
-      out.push({ ...ev, date, _occ: true, _baseDate: ev.date });
+    const span = eventSpanDays(ev);
+    // Startdaten auch dann finden, wenn ein mehrtägiger Termin VOR dem Zeitraum
+    // beginnt, aber hineinreicht -> Suchstart um (span-1) Tage nach hinten.
+    const searchStartISO = span > 1 ? toISODate(addDays(rs, -(span - 1))) : rangeStartISO;
+    const starts = expandOccurrences(ev, searchStartISO, rangeEndISO);
+    for (const startISO of starts) {
+      const sd = parseISODate(startISO);
+      for (let i = 0; i < span; i++) {
+        const d = addDays(sd, i);
+        if (d < rs || d > re) continue;
+        out.push({
+          ...ev, date: toISODate(d), _occ: true, _baseDate: ev.date,
+          _span: span, _spanStart: i === 0, _spanEnd: i === span - 1,
+        });
+      }
     }
   }
   out.sort((a, b) => (a.date === b.date ? timeToMin(a.start) - timeToMin(b.start) : a.date < b.date ? -1 : 1));

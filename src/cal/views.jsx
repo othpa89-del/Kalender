@@ -5,7 +5,7 @@ import React from "react";
 import {
   WEEKDAYS, WEEKDAYS_LONG, MONTHS, PRIORITIES,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO,
-  timeToMin, fmtDateLong, priorityById, dayConflictSet,
+  timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
 } from "./data.js";
 import { EventChip, MiniEvent, Dot, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
 
@@ -57,7 +57,12 @@ function layoutDay(items) {
 //  TAGESANSICHT
 // ---------------------------------------------------------------------
 export function DayView({ t, ctx, dateISO, occ, onSelect }) {
-  const dayItems = occ.filter((e) => e.date === dateISO);
+  // Mehrtägige Termine an diesem Tag auf die Tagesgrenzen zuschneiden,
+  // damit sie im Stundenraster sinnvoll positioniert werden.
+  const dayItems = occ.filter((e) => e.date === dateISO).map((e) =>
+    (e._span && e._span > 1)
+      ? { ...e, start: e._spanStart ? e.start : "00:00", end: e._spanEnd ? e.end : "23:59" }
+      : e);
   const HOUR = 52;
   const startHour = 0, endHour = 24;
   const placed = layoutDay(dayItems);
@@ -109,13 +114,13 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
             const w = 100 / colCount;
             const type = ctx.typeById(ev.typeId);
             const area = ctx.areaById(ev.areaId);
-            const prio = priorityById(ev.priority);
+            const prio = ev.priority ? priorityById(ev.priority) : null;
             const creator = ctx.userById(ev.creatorId);
             return (
               <button key={ev.id + idx} onClick={() => onSelect(ev)} style={{
                 position: "absolute", top, height, left: `${lane * w}%`, width: `calc(${w}% - 4px)`,
                 background: area ? hexA(area.color, t.mode === "dark" ? 0.26 : 0.15) : t.chip,
-                borderLeft: `4px solid ${prio.color}`,
+                borderLeft: `4px solid ${prio ? prio.color : t.borderSoft}`,
                 border: conflict ? "2px solid #E53935" : `1px solid ${t.border}`,
                 borderRadius: 8, padding: "4px 7px", cursor: "pointer", overflow: "hidden",
                 textAlign: "left", fontFamily: "inherit", color: t.text,
@@ -129,7 +134,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
                   <UserAvatar user={creator} size={18} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, color: t.muted, marginTop: 1 }}>
-                  <span>{ev.start}–{ev.end}</span>
+                  <span>{occTimeLabel(ev)}</span>
                   {ev.participants && ev.participants.length > 0 && <ParticipantDots ev={ev} ctx={ctx} size={9} />}
                 </div>
               </button>

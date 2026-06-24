@@ -60,8 +60,8 @@ function persistDiff(prefix, prev, next) {
 
 function blankEvent(ctx) {
   return {
-    id: null, title: "", date: todayISO(), start: "09:00", end: "10:00",
-    creatorId: ctx.activeUserId || "", areaId: "",
+    id: null, title: "", date: todayISO(), endDate: todayISO(), start: "09:00", end: "10:00",
+    creatorId: ctx.activeUserId || "", areaId: "a_privat",
     priority: "", typeId: "", participants: [], description: "", location: "",
     address: "", notes: "", link: "", attachments: [], reminder: "none",
     locked: false, recurrence: { freq: "none", interval: 1 },
@@ -134,10 +134,25 @@ export default function App() {
       if (!on) return;
       if (u && u.length) setUsers(u); else saveJSON(K_USERS, DEFAULT_USERS);
       if (a && a.length) setAreas(a); else saveJSON(K_AREAS, DEFAULT_AREAS);
-      if (ty && ty.length) setTypes(ty); else saveJSON(K_TYPES, DEFAULT_EVENT_TYPES);
+      // Terminarten laden. Fehlende Standardarten (z. B. "Arbeit") werden
+      // EINMALIG ergänzt; ein Flag verhindert, dass bewusst gelöschte zurückkehren.
+      let stEff = st || {};
+      if (ty && ty.length) {
+        let typesNext = ty;
+        if (!stEff.mergedDefaultTypesV1) {
+          const have = new Set(ty.map((x) => x.id));
+          const missing = DEFAULT_EVENT_TYPES.filter((d) => !have.has(d.id));
+          if (missing.length) { typesNext = [...ty, ...missing]; saveJSON(K_TYPES, typesNext); }
+          stEff = { ...stEff, mergedDefaultTypesV1: true };
+          saveJSON(K_SETTINGS, stEff);
+        }
+        setTypes(typesNext);
+      } else {
+        setTypes(DEFAULT_EVENT_TYPES); saveJSON(K_TYPES, DEFAULT_EVENT_TYPES);
+      }
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
-      if (st) setSettings((s) => ({ ...s, ...st }));
+      if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
     })();
     return () => { on = false; };
@@ -349,7 +364,7 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90 }}>
       {/* ===== Header ===== */}
       <header style={{ background: t.navy, color: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.25)" }}>
-        <div style={{ maxWidth: 980, margin: "0 auto", padding: "10px 14px max(10px, env(safe-area-inset-top))" }}>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) 14px 10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 20 }}>📅</span>
             <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>

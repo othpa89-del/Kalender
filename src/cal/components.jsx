@@ -2,7 +2,7 @@
 //  components.jsx – wiederverwendbare UI-Bausteine
 // ===========================================================================
 import React from "react";
-import { priorityById, timeToMin } from "./data.js";
+import { priorityById, timeToMin, occTimeLabel } from "./data.js";
 
 // --- Modal -------------------------------------------------------------
 export function Modal({ t, title, onClose, children, footer, wide }) {
@@ -54,8 +54,9 @@ export function Field({ t, label, children, required, hint }) {
 
 export function inputStyle(t) {
   return {
-    width: "100%", padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 9,
-    fontSize: 14, fontFamily: "inherit", background: t.input, color: t.text, outline: "none",
+    width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box",
+    padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 9,
+    fontSize: 16, fontFamily: "inherit", background: t.input, color: t.text, outline: "none",
   };
 }
 
@@ -161,7 +162,7 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
   const type = ctx.typeById(ev.typeId);
   const area = ctx.areaById(ev.areaId);
   const creator = ctx.userById(ev.creatorId);
-  const prio = priorityById(ev.priority);
+  const prio = ev.priority ? priorityById(ev.priority) : null;
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "stretch", gap: 0, width: "100%", textAlign: "left",
@@ -179,7 +180,7 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
             textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0,
           }}>{ev.title || "(ohne Titel)"}</span>
           {ev.locked && <span title="Gesperrt" style={{ flex: "none" }}>🔒</span>}
-          <span title={prio.name} style={{ flex: "none", fontSize: 11 }}>{prio.dot}</span>
+          {prio && <span title={prio.name} style={{ flex: "none", fontSize: 11 }}>{prio.dot}</span>}
           <UserAvatar user={creator} size={dense ? 20 : 24} />
         </span>
         <span style={{
@@ -188,7 +189,7 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
         }}>
           <span style={{ fontWeight: 700, color: t.text }}>
             {showDate ? `${ev.date.slice(8, 10)}.${ev.date.slice(5, 7)}. · ` : ""}
-            {ev.start}{ev.end ? `–${ev.end}` : ""}
+            {occTimeLabel(ev)}
           </span>
           {area && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
             <Dot color={area.color} size={8} />{area.name}
@@ -214,13 +215,13 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
 export function MiniEvent({ t, ev, ctx, onClick, conflict }) {
   const type = ctx.typeById(ev.typeId);
   const area = ctx.areaById(ev.areaId);
-  const prio = priorityById(ev.priority);
+  const prio = ev.priority ? priorityById(ev.priority) : null;
   const creator = ctx.userById(ev.creatorId);
   return (
     <button onClick={onClick} title={`${ev.start} ${ev.title}${creator ? " · " + creator.name : ""}${conflict ? " · ⚠️ Überschneidung" : ""}`} style={{
       display: "flex", alignItems: "center", gap: 3, width: "100%", textAlign: "left",
       background: area ? hexA(area.color, t.mode === "dark" ? 0.22 : 0.14) : t.chip,
-      borderLeft: `3px solid ${prio.color}`, borderRadius: 4, padding: "2px 4px",
+      borderLeft: `3px solid ${prio ? prio.color : t.borderSoft}`, borderRadius: 4, padding: "2px 4px",
       cursor: "pointer", fontFamily: "inherit", color: t.text, fontSize: 10.5,
       overflow: "hidden", marginBottom: 2, lineHeight: 1.25,
       outline: conflict ? "1.5px solid #E53935" : "none", outlineOffset: -1.5,
