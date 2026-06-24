@@ -29,6 +29,18 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   const rec = f.recurrence || { freq: "none" };
   const readOnly = !canEdit;
 
+  // Beginn-Datum ändern: Ende-Datum zieht mit, falls es sonst davor läge.
+  function setStartDate(v) {
+    setF((p) => {
+      const ed = p.endDate || p.date;
+      return { ...p, date: v, endDate: (!ed || ed < v) ? v : ed };
+    });
+  }
+  // Ende-Datum darf nie vor dem Beginn liegen -> auf den Beginn begrenzen.
+  function setEndDate(v) {
+    setF((p) => ({ ...p, endDate: (v && v < p.date) ? p.date : v }));
+  }
+
   // Ganztägig: Uhrzeiten auf den vollen Tag setzen / wieder Standardzeiten geben.
   function toggleAllDay(on) {
     setF((p) => (on
@@ -133,7 +145,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Beginn – Datum" required>
               <input type="date" style={sel} value={f.date}
-                onChange={(e) => set("date", e.target.value)} />
+                onChange={(e) => setStartDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
@@ -148,7 +160,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Ende – Datum" required hint="Für mehrtägige Termine späteres Datum wählen.">
               <input type="date" style={sel} value={f.endDate || f.date} min={f.date}
-                onChange={(e) => set("endDate", e.target.value)} />
+                onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
