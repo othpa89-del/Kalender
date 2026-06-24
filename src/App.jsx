@@ -266,7 +266,8 @@ export default function App() {
     setEditor({ draft: { ...base, ...prefill }, isNew: true });
   }
   function openQuick(q) {
-    openNew({ typeId: q.typeId, areaId: q.areaId, priority: q.priority, title: q.label });
+    // Nur den Titel vorbelegen – Priorität, Bereich, Terminart wählt man selbst.
+    openNew({ title: q.label });
   }
   function openEvent(ev) {
     // ev kann ein Vorkommen sein -> Basis-Termin laden
@@ -409,13 +410,13 @@ export default function App() {
             </div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
               {QUICK_TEMPLATES.map((q) => {
-                const ty = typeById(q.typeId);
+                const icon = q.icon || typeById(q.typeId)?.icon || "📌";
                 return (
                   <button key={q.id} onClick={() => openQuick(q)} style={{
                     display: "flex", alignItems: "center", gap: 6, background: t.surface, color: t.text,
                     border: `1px solid ${t.border}`, borderRadius: 22, padding: "8px 13px",
                     fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                  }}>{ty ? ty.icon : "📌"} {q.label}</button>
+                  }}>{icon} {q.label}</button>
                 );
               })}
             </div>

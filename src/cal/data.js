@@ -14,7 +14,7 @@ export function uid(prefix = "id") {
 // --- Standard-Benutzer -------------------------------------------------
 export const DEFAULT_USERS = [
   { id: "u_patrick", name: "Patrick", role: "admin", color: "#2E9E5B", avatar: "" },
-  { id: "u_katharina", name: "Nadja", role: "user", color: "#EC6FA4", avatar: "" },
+  { id: "u_nadja", name: "Nadja", role: "user", color: "#EC6FA4", avatar: "" },
 ];
 
 // --- Standard-Bereiche / Firmen ---------------------------------------
@@ -93,14 +93,19 @@ export const REMINDER_OPTIONS = [
 ];
 
 // --- Schnellanlage-Vorlagen -------------------------------------------
-// Verweisen auf Terminart-IDs, Bereich-IDs und Standardpriorität.
+// Eine Kachel setzt beim Antippen NUR den Titel (label). Priorität, Bereich,
+// Terminart usw. wählt man bewusst selbst – es wird nichts vorausgefüllt.
+// `icon` = angezeigtes Kachel-Symbol (sonst Fallback auf die Terminart-Ikone).
 export const QUICK_TEMPLATES = [
-  { id: "q_flight", label: "Flight", typeId: "t_flight", areaId: "a_firma_a", priority: "hoch" },
-  { id: "q_sim", label: "Simulator", typeId: "t_simulator", areaId: "a_firma_a", priority: "hoch" },
-  { id: "q_meeting", label: "Meeting", typeId: "t_meeting", areaId: "a_firma_a", priority: "normal" },
-  { id: "q_arzt", label: "Arzt", typeId: "t_arzt", areaId: "a_privat", priority: "normal" },
-  { id: "q_urlaub", label: "Urlaub", typeId: "t_urlaub", areaId: "a_privat", priority: "niedrig" },
-  { id: "q_auto", label: "Auto", typeId: "t_auto", areaId: "a_privat", priority: "niedrig" },
+  { id: "q_flight", label: "Flight", icon: "✈️" },
+  { id: "q_sim", label: "Simulator", icon: "🛫" },
+  { id: "q_meeting", label: "Meeting", icon: "👥" },
+  { id: "q_arzt", label: "Arzt", icon: "🏥" },
+  { id: "q_urlaub", label: "Urlaub", icon: "🌴" },
+  { id: "q_auto", label: "Auto", icon: "🚗" },
+  { id: "q_flugschule", label: "Flugschule", icon: "🏫" },
+  { id: "q_theo", label: "Theo", icon: "👦" },
+  { id: "q_maximilian", label: "Maximilian", icon: "👦" },
 ];
 
 // =====================================================================

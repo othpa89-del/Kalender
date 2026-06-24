@@ -88,16 +88,15 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, marginBottom: 6 }}>Schnellanlage</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {ctx.quickTemplates.map((q) => {
-              const type = ctx.typeById(q.typeId);
+              const icon = q.icon || ctx.typeById(q.typeId)?.icon || "📌";
               return (
                 <button key={q.id} onClick={() => setF((p) => ({
-                  ...p, typeId: q.typeId, areaId: q.areaId, priority: q.priority,
-                  title: p.title || q.label,
+                  ...p, title: p.title || q.label,
                 }))} style={{
                   display: "flex", alignItems: "center", gap: 5, background: t.chip, color: t.text,
                   border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "6px 11px",
                   fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                }}>{type ? type.icon : "📌"} {q.label}</button>
+                }}>{icon} {q.label}</button>
               );
             })}
           </div>
