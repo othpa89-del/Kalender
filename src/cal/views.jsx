@@ -7,7 +7,7 @@ import {
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
 } from "./data.js";
-import { EventChip, Dot, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
+import { EventChip, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
 
 // Leeransicht
 function Empty({ t, text }) {
@@ -337,12 +337,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect, onGoAgenda
   const today = todayISO();
   const todays = occ7.filter((e) => e.date === today);
   const next7 = occ7.filter((e) => e.date > today);
-  const critical = occ7.filter((e) => e.priority === "kritisch");
-  const locked = occ7.filter((e) => e.locked);
-
-  // Statistik
-  const perArea = {};
-  for (const e of occ7) perArea[e.areaId] = (perArea[e.areaId] || 0) + 1;
   const privArea = ctx.areas.find((a) => /privat/i.test(a.name));
   const privCount = occ7.filter((e) => privArea && e.areaId === privArea.id).length;
   const bizCount = occ7.length - privCount;
@@ -386,26 +380,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect, onGoAgenda
       </div>
 
       <Section title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
-      <Section title="Wichtig – Kritisch & Gesperrt"
-        items={[...critical, ...locked.filter((l) => !critical.some((c) => c.id === l.id && c.date === l.date))].slice(0, 8)}
-        empty="Keine kritischen oder gesperrten Termine." />
-      <Section title="Nächste 7 Tage" items={next7.slice(0, 10)} empty="Keine Termine in den nächsten 7 Tagen." badge={next7.length} />
-
-      {/* Statistik je Bereich */}
-      <div style={{ marginTop: 6 }}>
-        <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 800, color: t.text }}>Termine pro Bereich (7 Tage)</h3>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {ctx.areas.map((a) => (
-            <div key={a.id} style={{
-              display: "flex", alignItems: "center", gap: 7, background: t.surface,
-              border: `1px solid ${t.border}`, borderRadius: 9, padding: "7px 11px", fontSize: 13, color: t.text,
-            }}>
-              <Dot color={a.color} /><span style={{ fontWeight: 700 }}>{a.name}</span>
-              <span style={{ color: t.muted }}>{perArea[a.id] || 0}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

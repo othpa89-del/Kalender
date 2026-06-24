@@ -91,6 +91,8 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   function removeAtt(id) { set("attachments", (f.attachments || []).filter((a) => a.id !== id)); }
 
   const sel = inputStyle(t);
+  // Kompakter Stil für Datum-/Uhrzeit-Felder (niedrigere Zellen)
+  const dt = { ...sel, padding: "6px 9px", fontSize: 14 };
 
   return (
     <Modal t={t} wide title={isNew ? "Neuer Termin" : readOnly ? "Termin (gesperrt)" : "Termin bearbeiten"} onClose={onClose}
@@ -144,14 +146,14 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Beginn – Datum" required>
-              <input type="date" style={sel} value={f.date}
+              <input type="date" style={dt} value={f.date}
                 onChange={(e) => setStartDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
             <div style={{ flex: "1 1 110px", minWidth: 0 }}>
               <Field t={t} label="Beginn – Uhrzeit" required>
-                <input type="time" style={sel} value={f.start} onChange={(e) => set("start", e.target.value)} />
+                <input type="time" style={dt} value={f.start} onChange={(e) => set("start", e.target.value)} />
               </Field>
             </div>
           )}
@@ -159,14 +161,14 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Ende – Datum" required hint="Für mehrtägige Termine späteres Datum wählen.">
-              <input type="date" style={sel} value={f.endDate || f.date} min={f.date}
+              <input type="date" style={dt} value={f.endDate || f.date} min={f.date}
                 onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
             <div style={{ flex: "1 1 110px", minWidth: 0 }}>
               <Field t={t} label="Ende – Uhrzeit" required>
-                <input type="time" style={sel} value={f.end} onChange={(e) => set("end", e.target.value)} />
+                <input type="time" style={dt} value={f.end} onChange={(e) => set("end", e.target.value)} />
               </Field>
             </div>
           )}

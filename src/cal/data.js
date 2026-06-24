@@ -96,7 +96,7 @@ export const REMINDER_OPTIONS = [
 // Eine Kachel setzt beim Antippen Titel UND Icon des Termins. Priorität,
 // Bereich, Terminart wählt man bewusst selbst. Alphabetisch sortiert.
 export const QUICK_TEMPLATES = [
-  { id: "q_aaa", label: "AAA", icon: "🅰️" },
+  { id: "q_aaa", label: "AAA", icon: "🏢" },
   { id: "q_arzt", label: "Arzt", icon: "🏥" },
   { id: "q_auto", label: "Auto", icon: "🚗" },
   { id: "q_diverses", label: "Diverses", icon: "🗂️" },
