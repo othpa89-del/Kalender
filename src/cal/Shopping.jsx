@@ -8,23 +8,31 @@ import React, { useState } from "react";
 import { uid } from "./data.js";
 import { inputStyle, Btn, Dot } from "./components.jsx";
 
-// Automatische Kategorien per Stichwort (Reihenfolge = Anzeigereihenfolge)
+// Kategorien (alphabetisch). Beim Hinzufügen wählbar; ohne Auswahl wird per
+// Stichwort automatisch einsortiert.
 const CATEGORIES = [
-  { id: "obst", name: "Obst & Gemüse", icon: "🥦", keys: ["apfel","äpfel","banane","tomate","gurke","salat","zwiebel","kartoffel","karotte","möhre","paprika","zitrone","orange","beere","erdbeere","traube","birne","brokkoli","spinat","knoblauch","avocado","mango","melone","pilz","champignon","gemüse","obst","zucchini","aubergine","lauch","sellerie","ingwer","zitron","limette","kiwi","pfirsich","kirsche"] },
-  { id: "molkerei", name: "Kühlregal & Molkerei", icon: "🧀", keys: ["milch","butter","käse","joghurt","jogurt","quark","sahne","ei","eier","frischkäse","mozzarella","schmand","margarine","pudding","topfen","obers"] },
-  { id: "fleisch", name: "Fleisch & Fisch", icon: "🥩", keys: ["fleisch","wurst","schinken","hähnchen","huhn","hühn","rind","schwein","hack","faschiert","speck","salami","steak","schnitzel","fisch","lachs","thunfisch","leberkäse","frankfurter"] },
   { id: "backwaren", name: "Backwaren", icon: "🥖", keys: ["brot","brötchen","semmel","baguette","toast","croissant","kuchen","gebäck","mehl","hefe","weckerl","kipferl"] },
-  { id: "getränke", name: "Getränke", icon: "🥤", keys: ["wasser","saft","cola","limo","limonade","bier","wein","kaffee","tee","sprudel","getränk","spezi","fanta","sekt","almdudler","mineral"] },
-  { id: "tiefkühl", name: "Tiefkühl", icon: "🧊", keys: ["tiefkühl","tk","pizza","eis","pommes"] },
   { id: "drogerie", name: "Drogerie & Haushalt", icon: "🧼", keys: ["zahnpasta","zahnbürste","shampoo","duschgel","seife","klopapier","toilettenpapier","windel","waschmittel","spülmittel","putz","müllbeutel","müllsack","taschentücher","taschentuch","creme","deo","rasier","binden","tampon","watte","papier","schwamm","alufolie","frischhalte"] },
+  { id: "fleisch", name: "Fleisch & Fisch", icon: "🥩", keys: ["fleisch","wurst","schinken","hähnchen","huhn","hühn","rind","schwein","hack","faschiert","speck","salami","steak","schnitzel","fisch","lachs","thunfisch","leberkäse","frankfurter"] },
+  { id: "getränke", name: "Getränke", icon: "🥤", keys: ["wasser","saft","cola","limo","limonade","bier","wein","kaffee","tee","sprudel","getränk","spezi","fanta","sekt","almdudler","mineral"] },
+  { id: "molkerei", name: "Kühlregal & Molkerei", icon: "🧀", keys: ["milch","butter","käse","joghurt","jogurt","quark","sahne","eier","frischkäse","mozzarella","schmand","margarine","pudding","topfen","obers"] },
+  { id: "obst", name: "Obst & Gemüse", icon: "🥦", keys: ["apfel","äpfel","banane","tomate","gurke","salat","zwiebel","kartoffel","karotte","möhre","paprika","zitrone","orange","beere","erdbeere","traube","birne","brokkoli","spinat","knoblauch","avocado","mango","melone","pilz","champignon","gemüse","obst","zucchini","aubergine","lauch","sellerie","ingwer","zitron","limette","kiwi","pfirsich","kirsche"] },
+  { id: "tiefkühl", name: "Tiefkühl", icon: "🧊", keys: ["tiefkühl","pizza","eis","pommes"] },
   { id: "vorrat", name: "Vorrat & Trocken", icon: "🥫", keys: ["nudel","pasta","reis","zucker","salz","öl","essig","konserve","dose","tomatenmark","ketchup","senf","mayo","gewürz","müsli","cornflakes","haferflocken","schokolade","schoko","keks","chips","honig","marmelade","nutella","suppe","knödel","pfeffer"] },
 ];
 const OTHER = { id: "sonstiges", name: "Sonstiges", icon: "🛒" };
+const ALL_CATS = [...CATEGORIES, OTHER];
+const categoryById = (id) => ALL_CATS.find((c) => c.id === id);
 
 function categorize(text) {
   const s = (text || "").toLowerCase();
   for (const c of CATEGORIES) if (c.keys.some((k) => s.includes(k))) return c;
   return OTHER;
+}
+// Kategorie eines Artikels: manuell gewählte hat Vorrang, sonst automatisch.
+function itemCat(x) {
+  if (x.cat) { const c = categoryById(x.cat); if (c) return c; }
+  return categorize(x.text);
 }
 
 export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
@@ -33,6 +41,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   const [editText, setEditText] = useState("");
   const [manageFavs, setManageFavs] = useState(false);
   const [favText, setFavText] = useState("");
+  const [cat, setCat] = useState(""); // gewählte Rubrik beim Hinzufügen ("" = automatisch)
   const sel = inputStyle(t);
 
   function addFav() {
@@ -45,12 +54,12 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   }
   function removeFav(id) { setFavs(favs.filter((f) => f.id !== id)); }
 
-  function addItem(name) {
+  function addItem(name, catId = "") {
     const v = (name || "").trim();
     if (!v) return;
-    setItems([{ id: uid("shop"), text: v, done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
+    setItems([{ id: uid("shop"), text: v, cat: catId, done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
   }
-  function addFromInput() { addItem(text); setText(""); }
+  function addFromInput() { addItem(text, cat); setText(""); }
   function toggle(id) { setItems(items.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
   function remove(id) { setItems(items.filter((x) => x.id !== id)); }
   function checkAll() { setItems(items.map((x) => ({ ...x, done: true }))); }
@@ -68,12 +77,13 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
     setEditId(null); setEditText("");
   }
 
+  const byText = (a, b) => (a.text || "").localeCompare(b.text || "", "de");
   const open = items.filter((x) => !x.done);
-  const done = items.filter((x) => x.done);
+  const done = items.filter((x) => x.done).slice().sort(byText);
 
-  // offene Artikel nach Kategorie gruppieren
-  const groups = [...CATEGORIES, OTHER].map((c) => ({
-    cat: c, list: open.filter((x) => categorize(x.text).id === c.id),
+  // offene Artikel nach Kategorie gruppieren (Kategorien & Artikel alphabetisch)
+  const groups = ALL_CATS.map((c) => ({
+    cat: c, list: open.filter((x) => itemCat(x).id === c.id).slice().sort(byText),
   })).filter((g) => g.list.length);
 
   const Item = ({ x }) => {
@@ -156,12 +166,18 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
         )}
       </div>
 
-      {/* Eingabe */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <input style={{ ...sel, flex: 1 }} value={text} onChange={(e) => setText(e.target.value)}
-          placeholder="Was wird benötigt?" enterKeyHint="done"
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFromInput(); } }} />
-        <Btn t={t} kind="primary" onClick={addFromInput} style={{ fontSize: 22, padding: "0 16px", flex: "none" }}>+</Btn>
+      {/* Eingabe: Rubrik + Artikel */}
+      <div style={{ marginBottom: 14 }}>
+        <select style={{ ...sel, marginBottom: 8 }} value={cat} onChange={(e) => setCat(e.target.value)}>
+          <option value="">Rubrik: automatisch</option>
+          {ALL_CATS.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+        </select>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input style={{ ...sel, flex: 1 }} value={text} onChange={(e) => setText(e.target.value)}
+            placeholder="Was wird benötigt?" enterKeyHint="done"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFromInput(); } }} />
+          <Btn t={t} kind="primary" onClick={addFromInput} style={{ fontSize: 22, padding: "0 16px", flex: "none" }}>+</Btn>
+        </div>
       </div>
 
       {/* Sammel-Aktionen */}

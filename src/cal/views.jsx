@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import {
   WEEKDAYS, WEEKDAYS_LONG, MONTHS, PRIORITIES,
-  toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO,
+  toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
 } from "./data.js";
 import { EventChip, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
@@ -74,6 +74,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
     <div>
       <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, color: t.text }}>
         {fmtDateLong(dateISO)}
+        <span style={{ fontWeight: 800, color: "#fff", background: t.accent, fontSize: 12, marginLeft: 8, borderRadius: 6, padding: "2px 7px" }}>KW {isoWeek(dateISO)}</span>
         <span style={{ fontWeight: 600, color: t.muted, fontSize: 13, marginLeft: 8 }}>
           {dayItems.length} {dayItems.length === 1 ? "Termin" : "Termine"}
         </span>
@@ -157,6 +158,11 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const today = todayISO();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ marginBottom: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "#fff", background: t.accent, borderRadius: 7, padding: "3px 10px" }}>
+          KW {isoWeek(toISODate(ws))}
+        </span>
+      </div>
       {days.map((d) => {
         const iso = toISODate(d);
         const items = occ.filter((e) => e.date === iso);
@@ -229,46 +235,57 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 
   return (
     <div>
-      {/* Wochentagskopf */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 6 }}>
+      {/* Wochentagskopf (mit KW-Spalte) */}
+      <div style={{ display: "grid", gridTemplateColumns: "26px repeat(7,1fr)", gap: 4, marginBottom: 6 }}>
+        <div style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: t.faint, alignSelf: "center" }}>KW</div>
         {WEEKDAYS.map((w, i) => (
           <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 800, color: i >= 5 ? "#E5739A" : t.muted }}>{w}</div>
         ))}
       </div>
 
-      {/* Tagesraster mit Punkten */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
-        {grid.map((d) => {
-          const iso = toISODate(d);
-          const inMonth = d.getMonth() === month;
-          const isToday = iso === today;
-          const isSel = iso === selDay;
-          const wd = (d.getDay() + 6) % 7;
-          const items = byDay[iso] || [];
-          const dots = items.slice(0, 3);
+      {/* Tagesraster mit Punkten + KW-Spalte */}
+      <div style={{ display: "grid", gridTemplateColumns: "26px repeat(7,1fr)", gap: 4 }}>
+        {Array.from({ length: grid.length / 7 }).map((_, w) => {
+          const weekDays = grid.slice(w * 7, w * 7 + 7);
           return (
-            <button key={iso} onClick={() => setSelected(iso)} style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-              minHeight: 50, padding: "5px 2px", cursor: "pointer", overflow: "hidden",
-              fontFamily: "inherit",
-              background: isSel ? hexA(t.accent, t.mode === "dark" ? 0.22 : 0.12) : isToday ? t.todayBg : "transparent",
-              border: `1px solid ${isSel ? t.accent : isToday ? t.accent : "transparent"}`,
-              borderRadius: 10, opacity: inMonth ? 1 : 0.35,
-            }}>
-              <span style={{
-                width: 25, height: 25, lineHeight: "25px", borderRadius: "50%", fontSize: 13, textAlign: "center",
-                fontWeight: isToday || isSel ? 800 : 600,
-                background: isToday ? t.accent : "transparent",
-                color: isToday ? "#fff" : wd >= 5 ? "#E5739A" : t.text,
-              }}>{d.getDate()}</span>
-              <span style={{ display: "flex", gap: 3, alignItems: "center", height: 6 }}>
-                {dots.map((ev, i) => {
-                  const area = ctx.areaById(ev.areaId);
-                  return <span key={ev.id + i} style={{ width: 6, height: 6, borderRadius: "50%", background: area ? area.color : t.faint }} />;
-                })}
-                {items.length > 3 && <span style={{ fontSize: 8, fontWeight: 800, color: t.muted, lineHeight: "6px" }}>+{items.length - 3}</span>}
-              </span>
-            </button>
+            <React.Fragment key={"wk" + w}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: t.faint }}>
+                {isoWeek(toISODate(weekDays[0]))}
+              </div>
+              {weekDays.map((d) => {
+                const iso = toISODate(d);
+                const inMonth = d.getMonth() === month;
+                const isToday = iso === today;
+                const isSel = iso === selDay;
+                const wd = (d.getDay() + 6) % 7;
+                const items = byDay[iso] || [];
+                const dots = items.slice(0, 3);
+                return (
+                  <button key={iso} onClick={() => setSelected(iso)} style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                    minHeight: 50, padding: "5px 2px", cursor: "pointer", overflow: "hidden",
+                    fontFamily: "inherit",
+                    background: isSel ? hexA(t.accent, t.mode === "dark" ? 0.22 : 0.12) : isToday ? t.todayBg : "transparent",
+                    border: `1px solid ${isSel ? t.accent : isToday ? t.accent : "transparent"}`,
+                    borderRadius: 10, opacity: inMonth ? 1 : 0.35,
+                  }}>
+                    <span style={{
+                      width: 25, height: 25, lineHeight: "25px", borderRadius: "50%", fontSize: 13, textAlign: "center",
+                      fontWeight: isToday || isSel ? 800 : 600,
+                      background: isToday ? t.accent : "transparent",
+                      color: isToday ? "#fff" : wd >= 5 ? "#E5739A" : t.text,
+                    }}>{d.getDate()}</span>
+                    <span style={{ display: "flex", gap: 3, alignItems: "center", height: 6 }}>
+                      {dots.map((ev, i) => {
+                        const area = ctx.areaById(ev.areaId);
+                        return <span key={ev.id + i} style={{ width: 6, height: 6, borderRadius: "50%", background: area ? area.color : t.faint }} />;
+                      })}
+                      {items.length > 3 && <span style={{ fontSize: 8, fontWeight: 800, color: t.muted, lineHeight: "6px" }}>+{items.length - 3}</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </React.Fragment>
           );
         })}
       </div>

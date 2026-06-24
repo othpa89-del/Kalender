@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import {
   DEFAULT_USERS, DEFAULT_AREAS, DEFAULT_EVENT_TYPES, QUICK_TEMPLATES, DEFAULT_SHOP_FAVS, REMINDER_OPTIONS,
   PRIORITIES, priorityById, theme, uid,
-  todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid,
+  todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
   fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
 import { Toast, Btn, Dot } from "./cal/components.jsx";
@@ -382,8 +382,8 @@ export default function App() {
 
   const headerTitle = (() => {
     const c = parseISODate(cursor);
-    if (view === "day") return fmtDateShort(cursor);
-    if (view === "week") { const ws = startOfWeek(c); return `${fmtDateShort(toISODate(ws))} – ${fmtDateShort(toISODate(addDays(ws, 6)))}`; }
+    if (view === "day") return `${fmtDateShort(cursor)} · KW ${isoWeek(cursor)}`;
+    if (view === "week") { const ws = startOfWeek(c); return `${fmtDateShort(toISODate(ws))} – ${fmtDateShort(toISODate(addDays(ws, 6)))} · KW ${isoWeek(toISODate(ws))}`; }
     if (view === "month") return `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
     if (view === "agenda") return "Agenda";
     return "Dashboard";

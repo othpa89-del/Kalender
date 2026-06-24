@@ -155,6 +155,17 @@ export function startOfWeek(d) {
 export function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
+// ISO-8601-Kalenderwoche (Woche mit dem ersten Donnerstag des Jahres = KW 1).
+export function isoWeek(dOrISO) {
+  const src = typeof dOrISO === "string" ? parseISODate(dOrISO) : new Date(dOrISO);
+  const d = new Date(src.getFullYear(), src.getMonth(), src.getDate());
+  const day = (d.getDay() + 6) % 7;           // Mo=0 … So=6
+  d.setDate(d.getDate() - day + 3);           // Donnerstag dieser Woche
+  const firstThu = new Date(d.getFullYear(), 0, 4);
+  const fday = (firstThu.getDay() + 6) % 7;
+  firstThu.setDate(firstThu.getDate() - fday + 3);
+  return 1 + Math.round((d - firstThu) / (7 * 86400000));
+}
 export function isToday(s) { return s === todayISO(); }
 
 export const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
