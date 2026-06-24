@@ -106,6 +106,9 @@ export const QUICK_TEMPLATES = [
   { id: "q_flugschule", label: "Flugschule", icon: "🏫" },
   { id: "q_theo", label: "Theo", icon: "👦" },
   { id: "q_maximilian", label: "Maximilian", icon: "👦" },
+  { id: "q_eurowings", label: "Eurowings", icon: "🛩️" },
+  { id: "q_diverses", label: "Diverses", icon: "🗂️" },
+  { id: "q_ternitz", label: "Ternitz", icon: "📍" },
 ];
 
 // =====================================================================

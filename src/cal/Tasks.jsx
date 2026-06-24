@@ -49,20 +49,19 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
               </select>
             </Field>
           </div>
-          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
-            <Field t={t} label="Fällig am">
-              <input type="date" style={sel} value={f.due} onChange={(e) => set("due", e.target.value)} />
-            </Field>
-          </div>
-          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
             <Field t={t} label="Priorität">
               <select style={sel} value={f.priority} onChange={(e) => set("priority", e.target.value)}>
-                <option value="">– bitte wählen –</option>
+                <option value="">– keine –</option>
                 {PRIORITIES.map((p) => <option key={p.id} value={p.id}>{p.dot} {p.name}</option>)}
               </select>
             </Field>
           </div>
         </div>
+        {/* Voll­breit, damit das iOS-Datumsfeld nie über den Rand steht */}
+        <Field t={t} label="Fällig am">
+          <input type="date" style={sel} value={f.due} onChange={(e) => set("due", e.target.value)} />
+        </Field>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           {editId && <Btn t={t} kind="ghost" onClick={() => { setF(blankTask(ctx)); setEditId(null); }}>Abbrechen</Btn>}
           <Btn t={t} kind="primary" onClick={save}>{editId ? "Speichern" : "Hinzufügen"}</Btn>
