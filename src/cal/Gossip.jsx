@@ -35,7 +35,24 @@ export function Gossip({ t, ctx, items, setItems }) {
   const [area, setArea] = useState("");
   const [editId, setEditId] = useState(null);
   const [cDraft, setCDraft] = useState({}); // Kommentar-Entwurf je Eintrag-ID
+  const [fLevel, setFLevel] = useState("all");
+  const [fArea, setFArea] = useState("all");
+  const [sort, setSort] = useState("new");
   const sel = inputStyle(t);
+  const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
+
+  const levelOrder = (id) => { const i = GOSSIP_LEVELS.findIndex((l) => l.id === (id || "")); return i < 0 ? 99 : i; };
+  const areaOrder = (id) => { const i = GOSSIP_AREAS.findIndex((a) => a.id === (id || "")); return i < 0 ? 99 : i; };
+  const visible = items
+    .filter((x) => fLevel === "all" ? true : fLevel === "none" ? !x.level : x.level === fLevel)
+    .filter((x) => fArea === "all" ? true : fArea === "none" ? !x.area : x.area === fArea)
+    .slice()
+    .sort((a, b) => {
+      if (sort === "az") return (a.title || "").localeCompare(b.title || "", "de");
+      if (sort === "level") return (levelOrder(b.level) - levelOrder(a.level)) || ((b.createdAt || 0) - (a.createdAt || 0));
+      if (sort === "area") return (areaOrder(a.area) - areaOrder(b.area)) || ((b.createdAt || 0) - (a.createdAt || 0));
+      return (b.createdAt || 0) - (a.createdAt || 0); // Neueste zuerst
+    });
 
   function reset() { setTitle(""); setText(""); setLevel(""); setArea(""); setEditId(null); }
   function save() {
@@ -105,15 +122,52 @@ export function Gossip({ t, ctx, items, setItems }) {
         </div>
       </div>
 
+      {/* Filter & Sortierung */}
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Level</span>
+            <select style={ctrl} value={fLevel} onChange={(e) => setFLevel(e.target.value)}>
+              <option value="all">Alle Level</option>
+              <option value="none">– kein Level –</option>
+              {GOSSIP_LEVELS.filter((l) => l.id).map((l) => (
+                <option key={l.id} value={l.id}>{l.emoji} {l.name}</option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Area</span>
+            <select style={ctrl} value={fArea} onChange={(e) => setFArea(e.target.value)}>
+              <option value="all">Alle Areas</option>
+              <option value="none">– keine Area –</option>
+              {GOSSIP_AREAS.filter((a) => a.id).map((a) => (
+                <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Sortieren</span>
+            <select style={ctrl} value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="new">Neueste zuerst</option>
+              <option value="az">A–Z (Überschrift)</option>
+              <option value="level">Nach Level (heißeste zuerst)</option>
+              <option value="area">Nach Area</option>
+            </select>
+          </label>
+        </div>
+      )}
+
       {/* Liste */}
       {items.length === 0 ? (
         <div style={{ textAlign: "center", color: t.faint, padding: "40px 16px", fontSize: 14 }}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🍵</div>
           Noch kein Gossip. Oben eintragen.
         </div>
+      ) : visible.length === 0 ? (
+        <div style={{ color: t.faint, padding: "20px 4px", fontSize: 14 }}>Kein Gossip mit diesen Filtern.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {items.map((x) => {
+          {visible.map((x) => {
             const lv = levelById(x.level);
             const ar = areaById(x.area);
             const who = ctx.userById && ctx.userById(x.addedBy);
