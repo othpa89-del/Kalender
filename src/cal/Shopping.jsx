@@ -32,17 +32,16 @@ function categorize(text) {
 
 export function Shopping({ t, ctx, items, setItems }) {
   const [text, setText] = useState("");
-  const [qty, setQty] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
   const sel = inputStyle(t);
 
-  function addItem(name, menge = "") {
+  function addItem(name) {
     const v = (name || "").trim();
     if (!v) return;
-    setItems([{ id: uid("shop"), text: v, qty: (menge || "").trim(), done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
+    setItems([{ id: uid("shop"), text: v, done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
   }
-  function addFromInput() { addItem(text, qty); setText(""); setQty(""); }
+  function addFromInput() { addItem(text); setText(""); }
   function toggle(id) { setItems(items.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
   function remove(id) { setItems(items.filter((x) => x.id !== id)); }
   function checkAll() { setItems(items.map((x) => ({ ...x, done: true }))); }
@@ -78,9 +77,6 @@ export function Shopping({ t, ctx, items, setItems }) {
       }}>
         <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
           style={{ width: 22, height: 22, accentColor: t.accent, flex: "none", cursor: "pointer" }} />
-        {x.qty && !editing && (
-          <span style={{ flex: "none", fontSize: 12.5, fontWeight: 800, color: t.accent, background: t.chip, borderRadius: 6, padding: "2px 7px" }}>{x.qty}×</span>
-        )}
         {editing ? (
           <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
             onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEdit(); } }}
@@ -92,6 +88,15 @@ export function Shopping({ t, ctx, items, setItems }) {
           }}>{x.text}</span>
         )}
         {who && !editing && <span title={`Hinzugefügt von ${who.name}`} style={{ flex: "none" }}><Dot color={who.color} size={9} /></span>}
+        {editing ? (
+          <button onClick={commitEdit} aria-label="Fertig" style={{
+            background: "none", border: "none", color: t.accent, cursor: "pointer", fontSize: 16, flex: "none", lineHeight: 1, padding: 2,
+          }}>✓</button>
+        ) : (
+          <button onClick={() => startEdit(x)} aria-label="Bearbeiten" style={{
+            background: "none", border: "none", cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1, padding: 2,
+          }}>✏️</button>
+        )}
         <button onClick={() => remove(x.id)} aria-label="Löschen" style={{
           background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, flex: "none", lineHeight: 1, padding: 2,
         }}>×</button>
@@ -113,11 +118,8 @@ export function Shopping({ t, ctx, items, setItems }) {
         ))}
       </div>
 
-      {/* Eingabe: Menge + Artikel */}
+      {/* Eingabe */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        <input style={{ ...sel, width: 64, flex: "none", textAlign: "center" }} value={qty} onChange={(e) => setQty(e.target.value)}
-          placeholder="Menge" inputMode="numeric"
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFromInput(); } }} />
         <input style={{ ...sel, flex: 1 }} value={text} onChange={(e) => setText(e.target.value)}
           placeholder="Was wird benötigt?" enterKeyHint="done"
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFromInput(); } }} />
