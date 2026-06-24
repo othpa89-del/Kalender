@@ -6,7 +6,7 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
 
 ## ✨ Funktionen
 
-- **Benutzer** Patrick (Administrator) & Katharina (Benutzer) – Namen, Farben und
+- **Benutzer** Patrick (Administrator) & Nadja (Benutzer) – Namen, Farben und
   Rollen frei änderbar; oben wird der aktive Benutzer (Ersteller) gewählt.
 - **Ansichten:** Tag, Woche, Monat, Agenda und Dashboard mit Schnellstatistik.
 - **Termine** mit Pflichtfeldern (Titel, Datum, Start/Ende, Ersteller, Bereich,
