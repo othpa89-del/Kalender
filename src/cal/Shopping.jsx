@@ -44,14 +44,15 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   const [editText, setEditText] = useState("");
   const [manageFavs, setManageFavs] = useState(false);
   const [favText, setFavText] = useState("");
-  const [cat, setCat] = useState(""); // gewählte Rubrik beim Hinzufügen ("" = automatisch)
+  const [favCat, setFavCat] = useState(""); // Rubrik für einen neuen häufigen Artikel
+  const [cat, setCat] = useState(""); // gewählte Rubrik beim einmaligen Hinzufügen ("" = automatisch)
   const sel = inputStyle(t);
 
   function addFav() {
     const v = favText.trim();
     if (!v) return;
     if (!favs.some((f) => f.text.toLowerCase() === v.toLowerCase())) {
-      setFavs([...favs, { id: uid("fav"), text: v }]);
+      setFavs([...favs, { id: uid("fav"), text: v, cat: favCat }]);
     }
     setFavText("");
   }
@@ -140,31 +141,37 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
           }}>{manageFavs ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {favs.map((f) => (manageFavs ? (
+          {favs.map((f) => { const fc = f.cat ? categoryById(f.cat) : null; return (manageFavs ? (
             <span key={f.id} style={{
               display: "inline-flex", alignItems: "center", gap: 4, background: t.chip, color: t.text,
               border: `1px solid ${t.borderSoft}`, borderRadius: 18, padding: "6px 6px 6px 12px",
               fontSize: 13, fontWeight: 700,
             }}>
-              {f.text}
+              {fc && <span title={fc.name}>{fc.icon}</span>} {f.text}
               <button onClick={() => removeFav(f.id)} aria-label="Entfernen" style={{
                 background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: "0 3px",
               }}>×</button>
             </span>
           ) : (
-            <button key={f.id} onClick={() => addItem(f.text)} style={{
+            <button key={f.id} onClick={() => addItem(f.text, f.cat || "")} style={{
               background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}`, borderRadius: 18,
               padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
             }}>+ {f.text}</button>
-          )))}
+          )); })}
           {favs.length === 0 && <span style={{ fontSize: 12.5, color: t.faint }}>Keine häufigen Artikel – über „Verwalten" hinzufügen.</span>}
         </div>
         {manageFavs && (
-          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-            <input style={{ ...sel, flex: 1, padding: "7px 10px" }} value={favText} onChange={(e) => setFavText(e.target.value)}
-              placeholder="Neuer häufiger Artikel …"
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFav(); } }} />
-            <Btn t={t} kind="soft" onClick={addFav} style={{ flex: "none" }}>Hinzufügen</Btn>
+          <div style={{ marginTop: 8 }}>
+            <select style={{ ...sel, marginBottom: 6 }} value={favCat} onChange={(e) => setFavCat(e.target.value)}>
+              <option value="">Rubrik des Artikels: automatisch</option>
+              {ALL_CATS.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input style={{ ...sel, flex: 1, padding: "7px 10px" }} value={favText} onChange={(e) => setFavText(e.target.value)}
+                placeholder="Neuer häufiger Artikel …"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFav(); } }} />
+              <Btn t={t} kind="soft" onClick={addFav} style={{ flex: "none" }}>Hinzufügen</Btn>
+            </div>
           </div>
         )}
       </div>
