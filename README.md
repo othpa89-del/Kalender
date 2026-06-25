@@ -10,9 +10,9 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
   Nice to know · Gossip.
 - **Benutzer** Patrick (Administrator) & Nadja (Benutzer) – Namen, Farben und
   Rollen frei änderbar; oben wird der aktive Benutzer (Ersteller) gewählt.
-- **Kalender-Ansichten:**
+- **Kalender-Ansichten** (jeweils mit **Kalenderwoche „KW xx"**):
   - **Tag** mit Stundenraster, **Woche** als gut lesbare Tagesliste,
-    **Monat** als Punkte-Raster mit Termin-Liste des angetippten Tages.
+    **Monat** als Punkte-Raster mit KW-Spalte und Termin-Liste des angetippten Tages.
 - **Termine** mit Titel, Beginn-/Ende-**Datum** (mehrtägige Termine möglich) und
   **Uhrzeiten** oder **Ganztägig**-Schalter; Ersteller und Bereich. **Priorität**
   und **Terminart** sind optional. Optional außerdem Beschreibung, Ort, Adresse,
@@ -27,14 +27,16 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
   **wählbare/automatische Kategorien**, abhaken/bearbeiten, „Alle abhaken /
   Erledigte entfernen / Liste leeren", Farbpunkt „wer hat hinzugefügt".
 - **💡 Nice to know:** einfache Notizen (Überschrift + Notiz) mit optionaler
-  **Rubrik** (alphabetisch).
+  **Rubrik**; nach Rubrik **filterbar** und sortierbar (Neueste / A–Z / Rubrik).
 - **🍵 Gossip:** Überschrift + Notiz + **Level** (Steigerung) + optionale **Area**
-  (alphabetisch) sowie **Kommentare** je Eintrag.
+  sowie **Kommentare** je Eintrag; nach Level/Area **filterbar** und sortierbar.
+- **Ersteller sichtbar:** In allen Bereichen zeigt ein **farbiger Punkt** (Patrick/
+  Nadja), wer den Eintrag erstellt hat – auch bei Gossip-Kommentaren.
 - **Weiteres:** Sperren (🔒), wiederkehrende Termine, Anhänge & Links,
   Standortnavigation (Google/Apple Maps), Konflikterkennung, Filter &
   Volltextsuche, Benachrichtigungen, ICS-Export (Outlook/Google/Apple).
 - **Dark Mode** (Standard) + Light Mode; Hauptfarbe Dunkelblau. Kompakte,
-  platzsparende Darstellung.
+  platzsparende Darstellung; „Neuer Termin"-Button unten mittig.
 - **Auswahllisten** sind alphabetisch sortiert; eine Leer-Option steht immer oben.
 
 > Alle Listen (Termine, Aufgaben, Einkauf, Nice to know, Gossip) liegen pro Konto
