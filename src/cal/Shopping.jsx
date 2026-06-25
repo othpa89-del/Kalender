@@ -4,7 +4,7 @@
 //  Kategorien, abhaken, bearbeiten, „wer hat's eingetragen", Sammel-Aktionen.
 //  Cloud-synchron über alle Geräte.
 // ===========================================================================
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { uid } from "./data.js";
 import { inputStyle, Btn, Dot } from "./components.jsx";
 
@@ -47,6 +47,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   const [favCat, setFavCat] = useState(""); // Rubrik für einen neuen häufigen Artikel
   const [cat, setCat] = useState(""); // gewählte Rubrik beim einmaligen Hinzufügen ("" = automatisch)
   const sel = inputStyle(t);
+  const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
 
   function addFav() {
     const v = favText.trim();
@@ -61,7 +62,17 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   function addItem(name, catId = "") {
     const v = (name || "").trim();
     if (!v) return;
-    setItems([{ id: uid("shop"), text: v, cat: catId, done: false, addedBy: ctx.activeUserId, createdAt: Date.now() }, ...items]);
+    const key = v.toLowerCase();
+    const now = Date.now();
+    // Doppeltipp/Ghost-Click: denselben Artikel nicht im selben Moment doppelt anlegen
+    if (lastAdd.current.key === key && now - lastAdd.current.time < 900) return;
+    lastAdd.current = { key, time: now };
+    // Bereits offen auf der Liste? -> nicht doppelt eintragen
+    if (items.some((x) => !x.done && (x.text || "").trim().toLowerCase() === key)) {
+      if (ctx.flash) ctx.flash(`„${v}" ist schon auf der Liste.`, "info");
+      return;
+    }
+    setItems([{ id: uid("shop"), text: v, cat: catId, done: false, addedBy: ctx.activeUserId, createdAt: now }, ...items]);
   }
   function addFromInput() { addItem(text, cat); setText(""); }
   function toggle(id) { setItems(items.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
