@@ -129,7 +129,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5, fontWeight: 700 }}>
                   {conflict && <span title="Überschneidung" style={{ fontSize: 11, flex: "none" }}>⚠️</span>}
-                  <span style={{ flex: "none" }}>{(type && type.icon) || ev.icon || "📌"}</span>
+                  <span style={{ flex: "none" }}>{ev.icon || (type && type.icon) || "📌"}</span>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{ev.title}</span>
                   {ev.locked && <span style={{ fontSize: 10 }}>🔒</span>}
                   <UserAvatar user={creator} size={18} />
@@ -297,7 +297,8 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
               {placed.map((p, i) => {
                 const bg = t.accent; // einheitliche Balkenfarbe (kein Farbwechsel je Bereich)
                 const type = ctx.typeById(p.ev.typeId);
-                const icon = (type && type.icon) || p.ev.icon || "📌";
+                // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
+                const icon = p.ev.icon || (type && type.icon) || "📌";
                 return (
                   <button key={p.ev.id + "_" + p.startIdx + "_" + i} onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
                     gridColumn: `${p.startIdx + 2} / span ${p.span}`, gridRow: p.lane + 1,

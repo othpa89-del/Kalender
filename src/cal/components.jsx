@@ -160,7 +160,8 @@ export function ParticipantDots({ ev, ctx, size = 11, max = 4 }) {
 // =====================================================================
 export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
   const type = ctx.typeById(ev.typeId);
-  const icon = (type && type.icon) || ev.icon || "📌";
+  // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
+  const icon = ev.icon || (type && type.icon) || "📌";
   const area = ctx.areaById(ev.areaId);
   const creator = ctx.userById(ev.creatorId);
   const prio = ev.priority ? priorityById(ev.priority) : null;
