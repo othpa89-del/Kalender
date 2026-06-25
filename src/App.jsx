@@ -540,7 +540,7 @@ export default function App() {
       {/* ===== Neuer-Termin-Button ===== */}
       {!isList && (
         <button onClick={() => openNew()} aria-label="Neuer Termin" style={{
-          position: "fixed", right: "calc(16px + env(safe-area-inset-right))",
+          position: "fixed", left: "50%", transform: "translateX(-50%)",
           bottom: "calc(16px + env(safe-area-inset-bottom))", zIndex: 90,
           width: 58, height: 58, borderRadius: "50%", background: t.accent, color: "#fff",
           border: "none", fontSize: 30, cursor: "pointer", boxShadow: "0 8px 24px rgba(46,91,255,.5)", lineHeight: 1,
