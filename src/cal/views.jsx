@@ -297,13 +297,15 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
               {placed.map((p, i) => {
                 const area = ctx.areaById(p.ev.areaId);
                 const bg = (area && area.color) || t.faint;
+                const type = ctx.typeById(p.ev.typeId);
+                const icon = (type && type.icon) || p.ev.icon || "📌";
                 return (
                   <button key={p.ev.id + "_" + p.startIdx + "_" + i} onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
                     gridColumn: `${p.startIdx + 2} / span ${p.span}`, gridRow: p.lane + 1,
                     background: bg, color: "#fff", border: "none", borderRadius: 4, fontSize: 9.5, fontWeight: 700,
-                    padding: "0 4px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                    padding: "0 3px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
                     cursor: "pointer", fontFamily: "inherit", lineHeight: "15px", textAlign: p.span > 1 ? "center" : "left",
-                  }}>{p.ev.title || "(ohne Titel)"}</button>
+                  }}><span style={{ fontWeight: 400 }}>{icon}</span> {p.ev.title || "(ohne Titel)"}</button>
                 );
               })}
               {ofIdx.map((idx) => (
