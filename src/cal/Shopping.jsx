@@ -185,7 +185,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
           }}>{manageLists ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {lists.map((l) => (manageLists ? (
+          {lists.slice().sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase(), "de")).map((l) => (manageLists ? (
             renId === l.id ? (
               <span key={l.id} style={{ display: "inline-flex", gap: 4 }}>
                 <input autoFocus value={renText} onChange={(e) => setRenText(e.target.value)}
