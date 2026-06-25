@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   DEFAULT_USERS, DEFAULT_AREAS, DEFAULT_EVENT_TYPES, QUICK_TEMPLATES, DEFAULT_SHOP_FAVS, DEFAULT_SHOP_STORES, REMINDER_OPTIONS,
-  PRIORITIES, priorityById, theme, uid,
+  PRIORITIES, theme, uid,
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
   fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
@@ -85,9 +85,8 @@ export default function App() {
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
 
-  const [view, setView] = useState("dashboard"); // dashboard|day|week|month|agenda|tasks
+  const [view, setView] = useState("dashboard"); // dashboard|day|week|month|tasks|shopping|notes|gossip
   const [cursor, setCursor] = useState(todayISO());
-  const [agendaPeriod, setAgendaPeriod] = useState("month");
 
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -287,17 +286,9 @@ export default function App() {
     if (view === "day") return [cursor, cursor];
     if (view === "week") { const ws = startOfWeek(c); return [toISODate(ws), toISODate(addDays(ws, 6))]; }
     if (view === "month") { const g = monthGrid(c.getFullYear(), c.getMonth()); return [toISODate(g[0]), toISODate(g[41])]; }
-    if (view === "agenda") {
-      const start = todayISO();
-      const end = agendaPeriod === "today" ? start
-        : agendaPeriod === "week" ? toISODate(addDays(parseISODate(start), 6))
-        : agendaPeriod === "custom" ? cursor
-        : toISODate(addMonths(parseISODate(start), 1));
-      return [start, end < start ? start : end];
-    }
     // dashboard
     return [todayISO(), toISODate(addDays(parseISODate(todayISO()), 6))];
-  }, [view, cursor, agendaPeriod]);
+  }, [view, cursor]);
 
   const occ = useMemo(() => occurrencesInRange(filteredEvents, range[0], range[1]), [filteredEvents, range]);
 
@@ -364,7 +355,7 @@ export default function App() {
   function changeView(v) { setView(v); setMenuOpen(false); }
   function navStep(dir) {
     const c = parseISODate(cursor);
-    if (view === "day" || view === "agenda") setCursor(toISODate(addDays(c, dir)));
+    if (view === "day") setCursor(toISODate(addDays(c, dir)));
     else if (view === "week") setCursor(toISODate(addDays(c, dir * 7)));
     else if (view === "month") setCursor(toISODate(addMonths(c, dir)));
   }
@@ -385,7 +376,7 @@ export default function App() {
     setMenuOpen(false);
   }
   function exportJSON() {
-    downloadFile("kalender-backup.json", JSON.stringify({ users, areas, types, events, tasks }, null, 2), "application/json");
+    downloadFile("kalender-backup.json", JSON.stringify({ users, areas, types, events, tasks, shopping, notes, gossip, shopFav, shopStore, settings }, null, 2), "application/json");
     flash("JSON-Backup exportiert.");
     setMenuOpen(false);
   }
@@ -399,7 +390,6 @@ export default function App() {
     if (view === "day") return `${fmtDateShort(cursor)} · KW ${isoWeek(cursor)}`;
     if (view === "week") { const ws = startOfWeek(c); return `${fmtDateShort(toISODate(ws))} – ${fmtDateShort(toISODate(addDays(ws, 6)))} · KW ${isoWeek(toISODate(ws))}`; }
     if (view === "month") return `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
-    if (view === "agenda") return "Agenda";
     return "Dashboard";
   })();
 
@@ -430,6 +420,7 @@ export default function App() {
                 title="Aktiver Benutzer" style={{
                   background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)",
                   borderRadius: 8, padding: "6px 8px", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                  maxWidth: 130, minWidth: 0,
                 }}>
                 {users.map((u) => <option key={u.id} value={u.id} style={{ color: "#111" }}>{u.name}{u.role === "admin" ? " ★" : ""}</option>)}
               </select>
@@ -537,8 +528,7 @@ export default function App() {
 
         {/* ===== Ansicht ===== */}
         {view === "dashboard" && (
-          <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks}
-            onSelect={openEvent} onGoAgenda={() => setView("month")} />
+          <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks} onSelect={openEvent} />
         )}
         {view === "day" && <DayView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent} />}
         {view === "week" && <WeekView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
@@ -599,11 +589,11 @@ const menuItem = (t) => ({
 
 function FilterSelect({ t, label, value, onChange, options }) {
   return (
-    <label style={{ display: "block" }}>
+    <label style={{ display: "block", minWidth: 0, flex: "1 1 130px" }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: t.muted, marginBottom: 4 }}>{label}</div>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{
         padding: "8px 10px", border: `1px solid ${t.border}`, borderRadius: 9, background: t.input,
-        color: t.text, fontSize: 13, fontFamily: "inherit", minWidth: 130,
+        color: t.text, fontSize: 13, fontFamily: "inherit", width: "100%", maxWidth: "100%", minWidth: 0,
       }}>
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>

@@ -3,7 +3,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import {
-  WEEKDAYS, WEEKDAYS_LONG, MONTHS, PRIORITIES,
+  WEEKDAYS, WEEKDAYS_LONG,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
 } from "./data.js";
@@ -312,45 +312,9 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 }
 
 // ---------------------------------------------------------------------
-//  AGENDA-ANSICHT (kommende Termine)
-// ---------------------------------------------------------------------
-export function AgendaView({ t, ctx, occ, onSelect }) {
-  // gruppiere nach Datum
-  const groups = {};
-  for (const e of occ) (groups[e.date] = groups[e.date] || []).push(e);
-  const dates = Object.keys(groups).sort();
-  if (dates.length === 0) return <Empty t={t} text="Keine kommenden Termine im gewählten Zeitraum." />;
-  return (
-    <div>
-      {dates.map((d) => (
-        <div key={d} style={{ marginBottom: 18 }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
-            position: "sticky", top: 0, background: t.bg, padding: "4px 0", zIndex: 2,
-          }}>
-            <span style={{
-              fontSize: 13, fontWeight: 800, color: d === todayISO() ? t.accent : t.text,
-            }}>{fmtDateLong(d)}</span>
-            {d === todayISO() && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: t.accent, borderRadius: 6, padding: "1px 7px" }}>Heute</span>}
-            {dayConflictSet(groups[d]).size > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "#E53935", borderRadius: 6, padding: "1px 7px" }}>⚠️ Überschneidung</span>
-            )}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {(() => { const cf = dayConflictSet(groups[d]); return groups[d].map((ev, i) => (
-              <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} conflict={cf.has(ev.id)} onClick={() => onSelect(ev)} />
-            )); })()}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------
 //  DASHBOARD / STARTSEITE
 // ---------------------------------------------------------------------
-export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect, onGoAgenda }) {
+export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect }) {
   const today = todayISO();
   const todays = occ7.filter((e) => e.date === today);
   const next7 = occ7.filter((e) => e.date > today);

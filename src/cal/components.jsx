@@ -212,36 +212,6 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
   );
 }
 
-// kompakter Balken für die Monatsansicht
-export function MiniEvent({ t, ev, ctx, onClick, conflict }) {
-  const type = ctx.typeById(ev.typeId);
-  const area = ctx.areaById(ev.areaId);
-  const prio = ev.priority ? priorityById(ev.priority) : null;
-  const creator = ctx.userById(ev.creatorId);
-  return (
-    <button onClick={onClick} title={`${ev.start} ${ev.title}${creator ? " · " + creator.name : ""}${conflict ? " · ⚠️ Überschneidung" : ""}`} style={{
-      display: "flex", alignItems: "center", gap: 3, width: "100%", textAlign: "left",
-      background: area ? hexA(area.color, t.mode === "dark" ? 0.22 : 0.14) : t.chip,
-      borderLeft: `3px solid ${prio ? prio.color : t.borderSoft}`, borderRadius: 4, padding: "2px 4px",
-      cursor: "pointer", fontFamily: "inherit", color: t.text, fontSize: 10.5,
-      overflow: "hidden", marginBottom: 2, lineHeight: 1.25,
-      outline: conflict ? "1.5px solid #E53935" : "none", outlineOffset: -1.5,
-    }}>
-      {conflict && <span style={{ flex: "none", fontSize: 9 }}>⚠️</span>}
-      <span style={{ flex: "none", fontSize: 10 }}>{(type && type.icon) || ev.icon || "📌"}</span>
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-        {ev.title}
-      </span>
-      {ev.locked && <span style={{ flex: "none", fontSize: 9 }}>🔒</span>}
-      {/* Teilnehmer (wer muss dabei sein) */}
-      {ev.participants && ev.participants.length > 0
-        ? <ParticipantDots ev={ev} ctx={ctx} size={8} />
-        : /* sonst Ersteller-Farbe (wer hat es eingetragen) */
-          (creator && <span style={{ flex: "none", width: 8, height: 8, borderRadius: "50%", background: creator.color, border: "1px solid rgba(255,255,255,.7)" }} />)}
-    </button>
-  );
-}
-
 // Hex + Alpha -> rgba
 export function hexA(hex, a) {
   const h = (hex || "#000000").replace("#", "");

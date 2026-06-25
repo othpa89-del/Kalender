@@ -19,7 +19,7 @@ const CATEGORIES = [
   { id: "molkerei", name: "Kühlregal & Molkerei", icon: "🥛", keys: ["milch","butter","joghurt","jogurt","quark","sahne","eier","schmand","margarine","pudding","topfen","obers"] },
   { id: "newspaper", name: "Newspaper", icon: "📰", keys: ["newspaper","zeitung","zeitschrift","magazin","krone","kurier","presse"] },
   { id: "obst", name: "Obst & Gemüse", icon: "🥦", keys: ["apfel","äpfel","banane","tomate","gurke","salat","zwiebel","kartoffel","karotte","möhre","paprika","zitrone","orange","beere","erdbeere","traube","birne","brokkoli","spinat","knoblauch","avocado","mango","melone","pilz","champignon","gemüse","obst","zucchini","aubergine","lauch","sellerie","ingwer","zitron","limette","kiwi","pfirsich","kirsche"] },
-  { id: "tiefkühl", name: "Tiefkühl", icon: "🧊", keys: ["tiefkühl","pizza","eis","pommes"] },
+  { id: "tiefkühl", name: "Tiefkühl", icon: "🧊", keys: ["tiefkühl","pizza","pommes","speiseeis","fischstäbchen"] },
   { id: "vorrat", name: "Vorrat & Trocken", icon: "🥫", keys: ["nudel","pasta","reis","zucker","salz","öl","essig","konserve","dose","tomatenmark","ketchup","senf","mayo","gewürz","müsli","cornflakes","haferflocken","schokolade","schoko","keks","chips","honig","marmelade","nutella","suppe","knödel","pfeffer"] },
   { id: "wurstkaese", name: "Wurst & Käse", icon: "🧀", keys: ["wurst","schinken","salami","leberkäse","frankfurter","speck","aufschnitt","extrawurst","käse","frischkäse","mozzarella","gouda","emmentaler","bergkäse","parmesan","leberwurst","bratwurst"] },
 ];
@@ -97,9 +97,10 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
     if (!v) return;
     const key = v.toLowerCase();
     const now = Date.now();
-    // Doppeltipp/Ghost-Click: denselben Artikel nicht im selben Moment doppelt anlegen
-    if (lastAdd.current.key === key && now - lastAdd.current.time < 900) return;
-    lastAdd.current = { key, time: now };
+    // Doppeltipp/Ghost-Click: pro Liste, damit gleicher Artikel in anderer Liste erlaubt bleibt
+    const tapKey = activeId + "|" + key;
+    if (lastAdd.current.key === tapKey && now - lastAdd.current.time < 900) return;
+    lastAdd.current = { key: tapKey, time: now };
     // Bereits offen auf DIESER Liste? -> nicht doppelt eintragen
     if (items.some((x) => !x.done && inActive(x) && (x.text || "").trim().toLowerCase() === key)) {
       if (ctx.flash) ctx.flash(`„${v}" ist schon auf der Liste.`, "info");

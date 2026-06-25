@@ -46,8 +46,8 @@ function UsersAdmin({ t, ctx, sel }) {
         {ctx.users.map((u) => (
           <div key={u.id} style={row(t)}>
             <input type="color" value={u.color} onChange={(e) => update(u.id, { color: e.target.value })} style={colorInp} />
-            <input value={u.name} onChange={(e) => update(u.id, { name: e.target.value })} style={{ ...sel, flex: "1 1 120px" }} />
-            <select value={u.role} onChange={(e) => update(u.id, { role: e.target.value })} style={{ ...sel, flex: "0 0 130px" }}>
+            <input value={u.name} onChange={(e) => update(u.id, { name: e.target.value })} style={{ ...sel, flex: "1 1 120px", minWidth: 0 }} />
+            <select value={u.role} onChange={(e) => update(u.id, { role: e.target.value })} style={{ ...sel, flex: "1 1 130px", minWidth: 0 }}>
               <option value="">– bitte wählen –</option>
               <option value="admin">Administrator</option>
               <option value="user">Benutzer</option>
