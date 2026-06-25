@@ -38,7 +38,7 @@ function itemCat(x) {
   return categorize(x.text);
 }
 
-export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
+export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = [], setLists }) {
   const [text, setText] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
@@ -46,8 +46,41 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   const [favText, setFavText] = useState("");
   const [favCat, setFavCat] = useState(""); // Rubrik für einen neuen häufigen Artikel
   const [cat, setCat] = useState(""); // gewählte Rubrik beim einmaligen Hinzufügen ("" = automatisch)
+  const [activeList, setActiveList] = useState(""); // aktive Liste (Geschäft)
+  const [manageLists, setManageLists] = useState(false);
+  const [listText, setListText] = useState("");
+  const [renId, setRenId] = useState(null);     // umzubenennende Liste
+  const [renText, setRenText] = useState("");
   const sel = inputStyle(t);
   const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
+
+  // aktive Liste absichern (z. B. nach Löschen)
+  const activeId = lists.some((l) => l.id === activeList) ? activeList : (lists[0] ? lists[0].id : "");
+  const itemListId = (x) => x.list || (lists[0] ? lists[0].id : ""); // Altartikel -> erste Liste
+  const inActive = (x) => itemListId(x) === activeId;
+
+  function addList() {
+    const v = listText.trim();
+    if (!v) return;
+    const nl = { id: uid("list"), name: v };
+    setLists([...lists, nl]); setListText(""); setActiveList(nl.id);
+  }
+  function removeList(id) {
+    if (lists.length <= 1) { if (ctx.flash) ctx.flash("Mindestens eine Liste muss bleiben.", "warn"); return; }
+    const remaining = lists.filter((l) => l.id !== id);
+    const fallback = remaining[0].id;
+    // Artikel dieser Liste auf die erste verbleibende Liste verschieben (nichts geht verloren)
+    if (items.some((x) => itemListId(x) === id)) {
+      setItems(items.map((x) => (itemListId(x) === id ? { ...x, list: fallback } : x)));
+    }
+    setLists(remaining);
+    if (activeList === id) setActiveList(fallback);
+  }
+  function renameList(id) {
+    const v = renText.trim();
+    if (v) setLists(lists.map((l) => (l.id === id ? { ...l, name: v } : l)));
+    setRenId(null); setRenText("");
+  }
 
   function addFav() {
     const v = favText.trim();
@@ -67,21 +100,21 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
     // Doppeltipp/Ghost-Click: denselben Artikel nicht im selben Moment doppelt anlegen
     if (lastAdd.current.key === key && now - lastAdd.current.time < 900) return;
     lastAdd.current = { key, time: now };
-    // Bereits offen auf der Liste? -> nicht doppelt eintragen
-    if (items.some((x) => !x.done && (x.text || "").trim().toLowerCase() === key)) {
+    // Bereits offen auf DIESER Liste? -> nicht doppelt eintragen
+    if (items.some((x) => !x.done && inActive(x) && (x.text || "").trim().toLowerCase() === key)) {
       if (ctx.flash) ctx.flash(`„${v}" ist schon auf der Liste.`, "info");
       return;
     }
-    setItems([{ id: uid("shop"), text: v, cat: catId, done: false, addedBy: ctx.activeUserId, createdAt: now }, ...items]);
+    setItems([{ id: uid("shop"), text: v, cat: catId, list: activeId, done: false, addedBy: ctx.activeUserId, createdAt: now }, ...items]);
   }
   function addFromInput() { addItem(text, cat); setText(""); }
   function toggle(id) { setItems(items.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
   function remove(id) { setItems(items.filter((x) => x.id !== id)); }
-  function checkAll() { setItems(items.map((x) => ({ ...x, done: true }))); }
-  function clearDone() { setItems(items.filter((x) => !x.done)); }
+  function checkAll() { setItems(items.map((x) => (inActive(x) && !x.done ? { ...x, done: true } : x))); }
+  function clearDone() { setItems(items.filter((x) => !(x.done && inActive(x)))); }
   function clearAll() {
-    if (typeof window !== "undefined" && !window.confirm("Die ganze Einkaufsliste leeren?")) return;
-    setItems([]);
+    if (typeof window !== "undefined" && !window.confirm("Diese Liste leeren?")) return;
+    setItems(items.filter((x) => !inActive(x)));
   }
   function startEdit(x) { setEditId(x.id); setEditText(x.text); }
   function commitEdit() {
@@ -93,8 +126,8 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
   }
 
   const byText = (a, b) => (a.text || "").localeCompare(b.text || "", "de");
-  const open = items.filter((x) => !x.done);
-  const done = items.filter((x) => x.done).slice().sort(byText);
+  const open = items.filter((x) => !x.done && inActive(x));
+  const done = items.filter((x) => x.done && inActive(x)).slice().sort(byText);
 
   // offene Artikel nach Kategorie gruppieren (Kategorien & Artikel alphabetisch)
   const groups = ALL_CATS.map((c) => ({
@@ -142,31 +175,81 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
     <div>
       <h2 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: t.text }}>🛒 Einkaufsliste</h2>
 
-      {/* Häufige Artikel (frei verwaltbar) */}
+      {/* Listen / Geschäfte – umschaltbar, benennbar */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>LISTEN</span>
+          <button onClick={() => { setManageLists((m) => !m); setRenId(null); }} style={{
+            background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
+            fontSize: 13, fontWeight: 700, color: t.accent,
+          }}>{manageLists ? "Fertig" : "Verwalten"}</button>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {lists.map((l) => (manageLists ? (
+            renId === l.id ? (
+              <span key={l.id} style={{ display: "inline-flex", gap: 4 }}>
+                <input autoFocus value={renText} onChange={(e) => setRenText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); renameList(l.id); } }}
+                  style={{ ...sel, padding: "5px 9px", width: 130 }} />
+                <Btn t={t} kind="soft" onClick={() => renameList(l.id)} style={{ flex: "none" }}>✓</Btn>
+              </span>
+            ) : (
+              <span key={l.id} style={{
+                display: "inline-flex", alignItems: "center", gap: 2, background: t.chip, color: t.text,
+                border: `1px solid ${t.borderSoft}`, borderRadius: 18, padding: "5px 6px 5px 12px", fontSize: 13, fontWeight: 700,
+              }}>
+                <button onClick={() => { setRenId(l.id); setRenText(l.name); }} title="Umbenennen" style={{
+                  background: "none", border: "none", color: t.text, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, padding: 0,
+                }}>{l.name} ✏️</button>
+                <button onClick={() => removeList(l.id)} aria-label="Liste löschen" style={{
+                  background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 3px",
+                }}>×</button>
+              </span>
+            )
+          ) : (
+            <button key={l.id} onClick={() => setActiveList(l.id)} style={{
+              background: l.id === activeId ? t.accent : t.chip, color: l.id === activeId ? "#fff" : t.text,
+              border: `1px solid ${l.id === activeId ? t.accent : t.borderSoft}`, borderRadius: 18,
+              padding: "6px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+            }}>{l.name}</button>
+          )))}
+          {lists.length === 0 && <span style={{ fontSize: 12.5, color: t.faint }}>Keine Liste – über „Verwalten" anlegen.</span>}
+        </div>
+        {manageLists && (
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <input style={{ ...sel, flex: 1, padding: "7px 10px" }} value={listText} onChange={(e) => setListText(e.target.value)}
+              placeholder="Neue Liste (z. B. Hofer) …"
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addList(); } }} />
+            <Btn t={t} kind="soft" onClick={addList} style={{ flex: "none" }}>Hinzufügen</Btn>
+          </div>
+        )}
+      </div>
+
+      {/* Häufige Artikel (frei verwaltbar) */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>HÄUFIGE ARTIKEL</span>
           <button onClick={() => setManageFavs((m) => !m)} style={{
             background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
             fontSize: 13, fontWeight: 700, color: t.accent,
           }}>{manageFavs ? "Fertig" : "Verwalten"}</button>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {favs.slice().sort(byText).map((f) => { const fc = f.cat ? categoryById(f.cat) : null; return (manageFavs ? (
             <span key={f.id} style={{
-              display: "inline-flex", alignItems: "center", gap: 4, background: t.chip, color: t.text,
-              border: `1px solid ${t.borderSoft}`, borderRadius: 18, padding: "6px 6px 6px 12px",
-              fontSize: 13, fontWeight: 700,
+              display: "inline-flex", alignItems: "center", gap: 3, background: t.chip, color: t.text,
+              border: `1px solid ${t.borderSoft}`, borderRadius: 16, padding: "3px 5px 3px 10px",
+              fontSize: 12.5, fontWeight: 700,
             }}>
               {fc && <span title={fc.name}>{fc.icon}</span>} {f.text}
               <button onClick={() => removeFav(f.id)} aria-label="Entfernen" style={{
-                background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 17, lineHeight: 1, padding: "0 3px",
+                background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px",
               }}>×</button>
             </span>
           ) : (
             <button key={f.id} onClick={() => addItem(f.text, f.cat || "")} style={{
-              background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}`, borderRadius: 18,
-              padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}`, borderRadius: 16,
+              padding: "4px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
             }}>+ {f.text}</button>
           )); })}
           {favs.length === 0 && <span style={{ fontSize: 12.5, color: t.faint }}>Keine häufigen Artikel – über „Verwalten" hinzufügen.</span>}
@@ -202,7 +285,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
       </div>
 
       {/* Sammel-Aktionen */}
-      {items.length > 0 && (
+      {(open.length + done.length) > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 14 }}>
           {open.length > 0 && <ActionLink t={t} onClick={checkAll}>✓ Alle abhaken</ActionLink>}
           {done.length > 0 && <ActionLink t={t} onClick={clearDone}>Erledigte entfernen ({done.length})</ActionLink>}
@@ -210,10 +293,10 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
         </div>
       )}
 
-      {items.length === 0 ? (
+      {(open.length + done.length) === 0 ? (
         <div style={{ textAlign: "center", color: t.faint, padding: "40px 16px", fontSize: 14 }}>
           <div style={{ fontSize: 30, marginBottom: 8 }}>🛒</div>
-          Noch nichts auf der Liste. Oben eintragen oder einen häufigen Artikel tippen.
+          Diese Liste ist leer. Oben eintragen oder einen häufigen Artikel tippen.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

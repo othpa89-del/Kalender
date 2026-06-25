@@ -4,7 +4,7 @@
 // ===========================================================================
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
-  DEFAULT_USERS, DEFAULT_AREAS, DEFAULT_EVENT_TYPES, QUICK_TEMPLATES, DEFAULT_SHOP_FAVS, REMINDER_OPTIONS,
+  DEFAULT_USERS, DEFAULT_AREAS, DEFAULT_EVENT_TYPES, QUICK_TEMPLATES, DEFAULT_SHOP_FAVS, DEFAULT_SHOP_STORES, REMINDER_OPTIONS,
   PRIORITIES, priorityById, theme, uid,
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
   fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
@@ -25,7 +25,7 @@ const K_USERS = "cal_users", K_AREAS = "cal_areas", K_TYPES = "cal_types",
 // Termine & Aufgaben als EINZELNE Zeilen je Element (Präfix) -> robuste
 // Mehrgeräte-Sync: gleichzeitige Änderungen an verschiedenen Einträgen
 // überschreiben sich NICHT gegenseitig (kein Last-Write-Wins auf der Gesamtliste).
-const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:", P_NOTE = "cal_note:", P_GOSSIP = "cal_gossip:", P_SHOPFAV = "cal_shopfav:";
+const P_EVENT = "cal_event:", P_TASK = "cal_task:", P_SHOP = "cal_shop:", P_NOTE = "cal_note:", P_GOSSIP = "cal_gossip:", P_SHOPFAV = "cal_shopfav:", P_SHOPSTORE = "cal_shopstore:";
 // Legacy-Blobs (frühere Versionen) – werden einmalig migriert:
 const K_EVENTS_LEGACY = "cal_events", K_TASKS_LEGACY = "cal_tasks";
 
@@ -81,6 +81,7 @@ export default function App() {
   const [notes, setNotes] = useState([]);
   const [gossip, setGossip] = useState([]);
   const [shopFav, setShopFav] = useState([]);
+  const [shopStore, setShopStore] = useState([]);
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
 
@@ -109,6 +110,7 @@ export default function App() {
   const notesRef = useRef([]);
   const gossipRef = useRef([]);
   const shopFavRef = useRef([]);
+  const shopStoreRef = useRef([]);
 
   const t = theme(settings.themeMode);
 
@@ -131,6 +133,7 @@ export default function App() {
       const nt = await loadCollection(P_NOTE);
       const go = await loadCollection(P_GOSSIP);
       let fv = await loadCollection(P_SHOPFAV);
+      let stores = await loadCollection(P_SHOPSTORE);
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
       if (ev.length === 0) {
         const legacy = await loadJSON(K_EVENTS_LEGACY, []);
@@ -172,12 +175,20 @@ export default function App() {
         stEff = { ...stEff, seededShopFavV1: true };
         saveJSON(K_SETTINGS, stEff);
       }
+      // Geschäfte: einmalig mit Standardwerten befüllen.
+      if (!stEff.seededShopStoreV1 && stores.length === 0) {
+        stores = DEFAULT_SHOP_STORES.map((name, i) => ({ id: `store_${i}_${name}`, name }));
+        for (const x of stores) saveJSON(P_SHOPSTORE + x.id, x);
+        stEff = { ...stEff, seededShopStoreV1: true };
+        saveJSON(K_SETTINGS, stEff);
+      }
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
       notesRef.current = nt; setNotes(nt);
       gossipRef.current = go; setGossip(go);
       shopFavRef.current = fv; setShopFav(fv);
+      shopStoreRef.current = stores; setShopStore(stores);
       if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
     })();
@@ -196,6 +207,7 @@ export default function App() {
       const nt = await loadCollection(P_NOTE);
       const go = await loadCollection(P_GOSSIP);
       const fv = await loadCollection(P_SHOPFAV);
+      const stores = await loadCollection(P_SHOPSTORE);
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
@@ -205,6 +217,7 @@ export default function App() {
       notesRef.current = nt; setNotes(nt);
       gossipRef.current = go; setGossip(go);
       shopFavRef.current = fv; setShopFav(fv);
+      shopStoreRef.current = stores; setShopStore(stores);
       if (st) setSettings((s) => ({ ...s, ...st }));
     };
     window.addEventListener("ctc:remote", h);
@@ -223,6 +236,7 @@ export default function App() {
     notes: (next) => { persistDiff(P_NOTE, notesRef.current, next); notesRef.current = next; setNotes(next); },
     gossip: (next) => { persistDiff(P_GOSSIP, gossipRef.current, next); gossipRef.current = next; setGossip(next); },
     shopFav: (next) => { persistDiff(P_SHOPFAV, shopFavRef.current, next); shopFavRef.current = next; setShopFav(next); },
+    shopStore: (next) => { persistDiff(P_SHOPSTORE, shopStoreRef.current, next); shopStoreRef.current = next; setShopStore(next); },
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
@@ -532,7 +546,7 @@ export default function App() {
         {view === "month" && <MonthView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
         {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
-        {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} />}
+        {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
         {view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
         {view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
       </main>

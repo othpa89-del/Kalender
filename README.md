@@ -22,9 +22,10 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
 - **Bereiche/Firmen** (Firma A/B/C, Privat) mit frei wählbaren Farben; Standard
   neuer Termine: **Privat**.
 - **Aufgaben-Modul** (Titel, Verantwortlich, Fällig am, Priorität).
-- **🛒 Einkaufsliste:** eintragen, Menge, häufige Artikel als Schnell-Buttons,
-  **automatische Kategorien**, abhaken/bearbeiten, „Alle abhaken / Erledigte
-  entfernen / Liste leeren", Farbpunkt „wer hat hinzugefügt".
+- **🛒 Einkaufsliste:** mehrere **benennbare Listen** (z. B. je Geschäft) zum
+  Umschalten; häufige Artikel als Schnell-Buttons (mit fester Rubrik möglich),
+  **wählbare/automatische Kategorien**, abhaken/bearbeiten, „Alle abhaken /
+  Erledigte entfernen / Liste leeren", Farbpunkt „wer hat hinzugefügt".
 - **💡 Nice to know:** einfache Notizen (Überschrift + Notiz) mit optionaler
   **Rubrik** (alphabetisch).
 - **🍵 Gossip:** Überschrift + Notiz + **Level** (Steigerung) + optionale **Area**

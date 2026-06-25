@@ -98,6 +98,9 @@ export const DEFAULT_SHOP_FAVS = [
   "Bananen", "Äpfel", "Tomaten", "Kaffee", "Nudeln", "Klopapier",
 ];
 
+// --- Geschäfte (Standard; in der App frei änderbar) --------------------
+export const DEFAULT_SHOP_STORES = ["Billa", "Hofer", "Spar", "Lidl", "DM"];
+
 // --- Schnellanlage-Vorlagen -------------------------------------------
 // Eine Kachel setzt beim Antippen Titel UND Icon des Termins. Priorität,
 // Bereich, Terminart wählt man bewusst selbst. Alphabetisch sortiert.
