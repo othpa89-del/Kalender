@@ -1,7 +1,7 @@
 // ===========================================================================
 //  views.jsx – Tag / Woche / Monat / Agenda / Dashboard
 // ===========================================================================
-import React, { useState } from "react";
+import React from "react";
 import {
   WEEKDAYS, WEEKDAYS_LONG,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
@@ -210,102 +210,114 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 }
 
 // ---------------------------------------------------------------------
-//  MONATSANSICHT
+//  MONATSANSICHT – Übersicht mit farbigen Balken (Farbe = Bereich),
+//  mehrtägige Termine als durchgehender Balken. Kein Detail, nur Überblick.
+//  Tippen auf Balken: Termin öffnen. Tippen auf Tageszahl: Tagesansicht.
 // ---------------------------------------------------------------------
-// Übersichtliches Raster mit farbigen Punkten je Termin + Liste des
-// angetippten Tages darunter (Monat im Blick, Details ohne Ansichtswechsel).
+const MONTH_MAX_LANES = 4;
+
 export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const cur = parseISODate(dateISO);
   const year = cur.getFullYear(), month = cur.getMonth();
   const grid = monthGrid(year, month);
   const today = todayISO();
+  const weeks = Math.round(grid.length / 7);
+
   const byDay = {};
   for (const e of occ) (byDay[e.date] = byDay[e.date] || []).push(e);
 
-  // Ausgewählter Tag: heute (falls im Monat), sonst der Monatserste.
-  const todayD = parseISODate(today);
-  const todayInMonth = todayD.getMonth() === month && todayD.getFullYear() === year;
-  const firstISO = toISODate(new Date(year, month, 1));
-  const [selected, setSelected] = useState(todayInMonth ? today : firstISO);
-  // Auswahl an den sichtbaren Monat anpassen, wenn weitergeblättert wird.
-  const selInMonth = parseISODate(selected).getMonth() === month && parseISODate(selected).getFullYear() === year;
-  const selDay = selInMonth ? selected : (todayInMonth ? today : firstISO);
-  const selItems = byDay[selDay] || [];
-  const selConf = dayConflictSet(selItems);
+  // Termine einer Woche zu Balken (zusammenhängende Tage je Termin) + Spuren.
+  function weekBars(weekDays) {
+    const isoList = weekDays.map(toISODate);
+    const idxOf = {}; isoList.forEach((iso, i) => { idxOf[iso] = i; });
+    const perId = {};
+    isoList.forEach((iso) => {
+      (byDay[iso] || []).forEach((o) => { (perId[o.id] = perId[o.id] || []).push({ idx: idxOf[iso], o }); });
+    });
+    const runs = [];
+    Object.values(perId).forEach((arr) => {
+      arr.sort((a, b) => a.idx - b.idx);
+      let start = null, prev = null, rep = null;
+      arr.forEach((c) => {
+        if (start === null) { start = prev = c.idx; rep = c.o; }
+        else if (c.idx === prev + 1) { prev = c.idx; }
+        else { runs.push({ startIdx: start, span: prev - start + 1, ev: rep }); start = prev = c.idx; rep = c.o; }
+      });
+      if (start !== null) runs.push({ startIdx: start, span: prev - start + 1, ev: rep });
+    });
+    runs.sort((a, b) => a.startIdx - b.startIdx || b.span - a.span || timeToMin(a.ev.start) - timeToMin(b.ev.start));
+    const lanes = []; const placed = []; const overflow = {};
+    runs.forEach((r) => {
+      const end = r.startIdx + r.span - 1;
+      let lane = lanes.findIndex((ranges) => ranges.every(([s, e]) => r.startIdx > e || end < s));
+      if (lane === -1) { lane = lanes.length; lanes.push([]); }
+      if (lane < MONTH_MAX_LANES) { lanes[lane].push([r.startIdx, end]); placed.push({ ...r, lane }); }
+      else { for (let i = r.startIdx; i <= end; i++) overflow[i] = (overflow[i] || 0) + 1; }
+    });
+    return { placed, overflow };
+  }
 
+  const cols = "20px repeat(7,1fr)";
   return (
     <div>
-      {/* Wochentagskopf (mit KW-Spalte) */}
-      <div style={{ display: "grid", gridTemplateColumns: "26px repeat(7,1fr)", gap: 4, marginBottom: 6 }}>
-        <div style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: t.faint, alignSelf: "center" }}>KW</div>
+      {/* Wochentagskopf */}
+      <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, marginBottom: 2 }}>
+        <div style={{ textAlign: "center", fontSize: 8.5, fontWeight: 800, color: t.faint, alignSelf: "center" }}>KW</div>
         {WEEKDAYS.map((w, i) => (
-          <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 800, color: i >= 5 ? "#E5739A" : t.muted }}>{w}</div>
+          <div key={w} style={{ textAlign: "center", fontSize: 10, fontWeight: 800, color: i >= 5 ? "#E5739A" : t.muted }}>{w}</div>
         ))}
       </div>
 
-      {/* Tagesraster mit Punkten + KW-Spalte */}
-      <div style={{ display: "grid", gridTemplateColumns: "26px repeat(7,1fr)", gap: 4 }}>
-        {Array.from({ length: grid.length / 7 }).map((_, w) => {
-          const weekDays = grid.slice(w * 7, w * 7 + 7);
-          return (
-            <React.Fragment key={"wk" + w}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: t.faint }}>
-                {isoWeek(toISODate(weekDays[0]))}
-              </div>
+      {Array.from({ length: weeks }).map((_, w) => {
+        const weekDays = grid.slice(w * 7, w * 7 + 7);
+        const { placed, overflow } = weekBars(weekDays);
+        const ofIdx = Object.keys(overflow);
+        return (
+          <div key={"w" + w} style={{ borderTop: `1px solid ${t.borderSoft}`, paddingTop: 2, marginBottom: 3 }}>
+            {/* Tageszahlen + KW */}
+            <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, alignItems: "center" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: t.faint, textAlign: "center" }}>{isoWeek(toISODate(weekDays[0]))}</div>
               {weekDays.map((d) => {
-                const iso = toISODate(d);
-                const inMonth = d.getMonth() === month;
-                const isToday = iso === today;
-                const isSel = iso === selDay;
-                const wd = (d.getDay() + 6) % 7;
-                const items = byDay[iso] || [];
-                const dots = items.slice(0, 3);
+                const iso = toISODate(d); const inMonth = d.getMonth() === month; const isToday = iso === today; const wd = (d.getDay() + 6) % 7;
                 return (
-                  <button key={iso} onClick={() => setSelected(iso)} style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                    minHeight: 50, padding: "5px 2px", cursor: "pointer", overflow: "hidden",
-                    fontFamily: "inherit",
-                    background: isSel ? hexA(t.accent, t.mode === "dark" ? 0.22 : 0.12) : isToday ? t.todayBg : "transparent",
-                    border: `1px solid ${isSel ? t.accent : isToday ? t.accent : "transparent"}`,
-                    borderRadius: 10, opacity: inMonth ? 1 : 0.35,
+                  <button key={iso} onClick={() => onPickDay(iso)} title="Tagesansicht öffnen" style={{
+                    background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "center",
                   }}>
                     <span style={{
-                      width: 25, height: 25, lineHeight: "25px", borderRadius: "50%", fontSize: 13, textAlign: "center",
-                      fontWeight: isToday || isSel ? 800 : 600,
-                      background: isToday ? t.accent : "transparent",
-                      color: isToday ? "#fff" : wd >= 5 ? "#E5739A" : t.text,
+                      display: "inline-block", width: 19, height: 19, lineHeight: "19px", borderRadius: "50%", fontSize: 12,
+                      fontWeight: isToday ? 800 : 600, background: isToday ? t.accent : "transparent",
+                      color: isToday ? "#fff" : !inMonth ? t.faint : wd >= 5 ? "#E5739A" : t.text, opacity: inMonth ? 1 : 0.55,
                     }}>{d.getDate()}</span>
-                    <span style={{ display: "flex", gap: 3, alignItems: "center", height: 6 }}>
-                      {dots.map((ev, i) => {
-                        const area = ctx.areaById(ev.areaId);
-                        return <span key={ev.id + i} style={{ width: 6, height: 6, borderRadius: "50%", background: area ? area.color : t.faint }} />;
-                      })}
-                      {items.length > 3 && <span style={{ fontSize: 8, fontWeight: 800, color: t.muted, lineHeight: "6px" }}>+{items.length - 3}</span>}
-                    </span>
                   </button>
                 );
               })}
-            </React.Fragment>
-          );
-        })}
-      </div>
-
-      {/* Termine des ausgewählten Tages */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: selDay === today ? t.accent : t.text }}>{fmtDateLong(selDay)}</span>
-          {selDay === today && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: t.accent, borderRadius: 6, padding: "1px 7px" }}>Heute</span>}
-          <button onClick={() => onPickDay(selDay)} style={{ marginLeft: "auto", background: "none", border: "none", color: t.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Tagesansicht ›</button>
-        </div>
-        {selItems.length === 0 ? (
-          <div style={{ fontSize: 13, color: t.faint, padding: "8px 0" }}>Keine Termine an diesem Tag.</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {selItems.map((ev, i) => (
-              <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} conflict={selConf.has(ev.id)} onClick={() => onSelect(ev)} />
-            ))}
+            </div>
+            {/* Balken */}
+            <div style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
+              {placed.map((p, i) => {
+                const area = ctx.areaById(p.ev.areaId);
+                const bg = (area && area.color) || t.faint;
+                return (
+                  <button key={p.ev.id + "_" + p.startIdx + "_" + i} onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
+                    gridColumn: `${p.startIdx + 2} / span ${p.span}`, gridRow: p.lane + 1,
+                    background: bg, color: "#fff", border: "none", borderRadius: 4, fontSize: 9.5, fontWeight: 700,
+                    padding: "0 4px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                    cursor: "pointer", fontFamily: "inherit", lineHeight: "15px", textAlign: p.span > 1 ? "center" : "left",
+                  }}>{p.ev.title || "(ohne Titel)"}</button>
+                );
+              })}
+              {ofIdx.map((idx) => (
+                <div key={"of" + idx} style={{
+                  gridColumn: `${Number(idx) + 2} / span 1`, gridRow: MONTH_MAX_LANES + 1,
+                  fontSize: 8.5, fontWeight: 800, color: t.muted, textAlign: "center", lineHeight: "12px",
+                }}>+{overflow[idx]}</div>
+              ))}
+            </div>
           </div>
-        )}
+        );
+      })}
+      <div style={{ marginTop: 8, fontSize: 11, color: t.faint, textAlign: "center" }}>
+        Balken antippen = Termin · Tageszahl antippen = Tagesansicht
       </div>
     </div>
   );
