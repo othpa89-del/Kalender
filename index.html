@@ -20,6 +20,16 @@
       * { box-sizing: border-box; }
       /* Eingabefelder dürfen ihren Container nie sprengen (v. a. iOS date/time) */
       input, select, textarea { max-width: 100%; min-width: 0; }
+      /* Copyright beim Drucken / als PDF immer am Seitenende anzeigen */
+      @media print {
+        .app-copyright { display: block !important; }
+        @page { margin-bottom: 16mm; }
+        body::after {
+          content: "© Copyright by Patrick Thorn";
+          position: fixed; bottom: 6mm; left: 0; right: 0;
+          text-align: center; font-size: 9pt; color: #555;
+        }
+      }
     </style>
   </head>
   <body>

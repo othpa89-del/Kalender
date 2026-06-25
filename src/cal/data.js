@@ -416,6 +416,8 @@ export function buildICS(events, typeName, areaName, userName) {
     "VERSION:2.0",
     "PRODID:-//Kalender App//DE",
     "CALSCALE:GREGORIAN",
+    "X-WR-CALNAME:Kalender – Familie & Business",
+    "X-WR-CALDESC:Copyright by Patrick Thorn",
   ];
   for (const ev of events) {
     lines.push("BEGIN:VEVENT");

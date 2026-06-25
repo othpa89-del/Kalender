@@ -376,7 +376,7 @@ export default function App() {
     setMenuOpen(false);
   }
   function exportJSON() {
-    downloadFile("kalender-backup.json", JSON.stringify({ users, areas, types, events, tasks, shopping, notes, gossip, shopFav, shopStore, settings }, null, 2), "application/json");
+    downloadFile("kalender-backup.json", JSON.stringify({ _copyright: "Copyright by Patrick Thorn", users, areas, types, events, tasks, shopping, notes, gossip, shopFav, shopStore, settings }, null, 2), "application/json");
     flash("JSON-Backup exportiert.");
     setMenuOpen(false);
   }
@@ -539,6 +539,12 @@ export default function App() {
         {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
         {view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
         {view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
+
+        {/* ===== Copyright (dezent, erscheint auch beim Drucken/PDF) ===== */}
+        <div className="app-copyright" style={{
+          marginTop: 24, paddingTop: 10, borderTop: `1px solid ${t.borderSoft}`,
+          textAlign: "center", fontSize: 10.5, color: t.faint, fontWeight: 600, letterSpacing: ".02em",
+        }}>© Copyright by Patrick Thorn</div>
       </main>
 
       {/* ===== Neuer-Termin-Button ===== */}
