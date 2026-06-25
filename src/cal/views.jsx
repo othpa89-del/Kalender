@@ -210,7 +210,7 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 }
 
 // ---------------------------------------------------------------------
-//  MONATSANSICHT – Übersicht mit farbigen Balken (Farbe = Bereich),
+//  MONATSANSICHT – Übersicht mit Balken (einheitliche Farbe) und Termin-Icon,
 //  mehrtägige Termine als durchgehender Balken. Kein Detail, nur Überblick.
 //  Tippen auf Balken: Termin öffnen. Tippen auf Tageszahl: Tagesansicht.
 // ---------------------------------------------------------------------
@@ -295,8 +295,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
             {/* Balken */}
             <div style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
               {placed.map((p, i) => {
-                const area = ctx.areaById(p.ev.areaId);
-                const bg = (area && area.color) || t.faint;
+                const bg = t.accent; // einheitliche Balkenfarbe (kein Farbwechsel je Bereich)
                 const type = ctx.typeById(p.ev.typeId);
                 const icon = (type && type.icon) || p.ev.icon || "📌";
                 return (

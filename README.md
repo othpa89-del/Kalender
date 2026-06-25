@@ -12,7 +12,8 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
   Rollen frei änderbar; oben wird der aktive Benutzer (Ersteller) gewählt.
 - **Kalender-Ansichten** (jeweils mit **Kalenderwoche „KW xx"**):
   - **Tag** mit Stundenraster, **Woche** als gut lesbare Tagesliste,
-    **Monat** als Punkte-Raster mit KW-Spalte und Termin-Liste des angetippten Tages.
+    **Monat** als Balken-Übersicht (einheitliche Farbe) mit **Termin-Icon** je
+    Balken, KW-Spalte und durchgehenden Balken für mehrtägige Termine.
 - **Termine** mit Titel, Beginn-/Ende-**Datum** (mehrtägige Termine möglich) und
   **Uhrzeiten** oder **Ganztägig**-Schalter; Ersteller und Bereich. **Priorität**
   und **Terminart** sind optional. Optional außerdem Beschreibung, Ort, Adresse,
