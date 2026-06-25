@@ -141,7 +141,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs }) {
           }}>{manageFavs ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {favs.map((f) => { const fc = f.cat ? categoryById(f.cat) : null; return (manageFavs ? (
+          {favs.slice().sort(byText).map((f) => { const fc = f.cat ? categoryById(f.cat) : null; return (manageFavs ? (
             <span key={f.id} style={{
               display: "inline-flex", alignItems: "center", gap: 4, background: t.chip, color: t.text,
               border: `1px solid ${t.borderSoft}`, borderRadius: 18, padding: "6px 6px 6px 12px",
