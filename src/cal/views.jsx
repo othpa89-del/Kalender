@@ -273,7 +273,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
         const { placed, overflow } = weekBars(weekDays);
         const ofIdx = Object.keys(overflow);
         return (
-          <div key={"w" + w} style={{ borderTop: `1px solid ${t.borderSoft}`, paddingTop: 2, marginBottom: 3 }}>
+          <div key={"w" + w} className="cal-week" style={{ borderTop: `1px solid ${t.borderSoft}`, paddingTop: 2, marginBottom: 3 }}>
             {/* Tageszahlen + KW */}
             <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, alignItems: "center" }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: t.faint, textAlign: "center" }}>{isoWeek(toISODate(weekDays[0]))}</div>
@@ -283,7 +283,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                   <button key={iso} onClick={() => onPickDay(iso)} title="Tagesansicht öffnen" style={{
                     background: "none", border: "none", cursor: "pointer", padding: "2px 0", fontFamily: "inherit", textAlign: "center",
                   }}>
-                    <span style={{
+                    <span className="cal-daynum" style={{
                       display: "inline-block", width: 19, height: 19, lineHeight: "19px", borderRadius: "50%", fontSize: 12,
                       fontWeight: isToday ? 800 : 600, background: isToday ? t.accent : "transparent",
                       color: isToday ? "#fff" : !inMonth ? t.faint : wd >= 5 ? "#E5739A" : t.text, opacity: inMonth ? 1 : 0.55,
@@ -293,14 +293,14 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
               })}
             </div>
             {/* Balken */}
-            <div style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
+            <div className="cal-bars" style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
               {placed.map((p, i) => {
                 const bg = t.accent; // einheitliche Balkenfarbe (kein Farbwechsel je Bereich)
                 const type = ctx.typeById(p.ev.typeId);
                 // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
                 const icon = p.ev.icon || (type && type.icon) || "📌";
                 return (
-                  <button key={p.ev.id + "_" + p.startIdx + "_" + i} onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
+                  <button key={p.ev.id + "_" + p.startIdx + "_" + i} className="cal-bar" onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
                     gridColumn: `${p.startIdx + 2} / span ${p.span}`, gridRow: p.lane + 1,
                     background: bg, color: "#fff", border: "none", borderRadius: 4, fontSize: 9.5, fontWeight: 700,
                     padding: "0 3px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",

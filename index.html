@@ -20,6 +20,14 @@
       * { box-sizing: border-box; }
       /* Eingabefelder dürfen ihren Container nie sprengen (v. a. iOS date/time) */
       input, select, textarea { max-width: 100%; min-width: 0; }
+      /* Desktop/Tablet: Monatsansicht großzügiger, damit sie wie ein echter
+         Kalender wirkt (am Handy bleibt die kompakte Darstellung). */
+      @media (min-width: 760px) {
+        .cal-week { min-height: 116px; }
+        .cal-bars { grid-auto-rows: 23px !important; row-gap: 4px !important; padding-top: 5px !important; }
+        .cal-bar { line-height: 23px !important; font-size: 12.5px !important; border-radius: 6px !important; padding: 0 8px !important; }
+        .cal-daynum { width: 26px !important; height: 26px !important; line-height: 26px !important; font-size: 14px !important; }
+      }
       /* Copyright beim Drucken / als PDF immer am Seitenende anzeigen */
       @media print {
         .app-copyright { display: block !important; }
