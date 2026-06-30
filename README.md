@@ -33,9 +33,14 @@ Laptops – live. Läuft als installierbare Web-App (PWA) auf iOS, Android und i
   sowie **Kommentare** je Eintrag; nach Level/Area **filterbar** und sortierbar.
 - **Ersteller sichtbar:** In allen Bereichen zeigt ein **farbiger Punkt** (Patrick/
   Nadja), wer den Eintrag erstellt hat – auch bei Gossip-Kommentaren.
+- **Benachrichtigungen:** Termin-Erinnerungen sowie eine Hinweis-Meldung, wenn
+  per Live-Sync ein **neuer Eintrag von der anderen Person** ankommt (Termin,
+  Aufgabe, Gossip) – zu aktivieren über „🔔 Benachrichtigungen aktivieren" im
+  Menü. Hinweis: erscheint, solange die App/PWA geöffnet bzw. im Hintergrund
+  aktiv ist (keine Push bei vollständig geschlossener App).
 - **Weiteres:** Sperren (🔒), wiederkehrende Termine, Anhänge & Links,
   Standortnavigation (Google/Apple Maps), Konflikterkennung, Filter &
-  Volltextsuche, Benachrichtigungen, ICS-Export (Outlook/Google/Apple).
+  Volltextsuche, ICS-Export (Outlook/Google/Apple).
 - **Dark Mode** (Standard) + Light Mode; Hauptfarbe Dunkelblau. Kompakte,
   platzsparende Darstellung; „Neuer Termin"-Button unten mittig.
 - **Auswahllisten** sind alphabetisch sortiert; eine Leer-Option steht immer oben.

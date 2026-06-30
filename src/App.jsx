@@ -110,13 +110,46 @@ export default function App() {
   const gossipRef = useRef([]);
   const shopFavRef = useRef([]);
   const shopStoreRef = useRef([]);
+  // Für In-App-Benachrichtigungen bei neuen Einträgen (per Live-Sync)
+  const notifyReadyRef = useRef(false);     // erst nach dem ersten Laden benachrichtigen
+  const activeUserIdRef = useRef(null);     // aktueller Benutzer (frisch, nicht aus Closure)
+  const usersRef = useRef([]);
 
   const t = theme(settings.themeMode);
+  activeUserIdRef.current = settings.activeUserId;
+  usersRef.current = users;
 
   const flash = useCallback((msg, kind = "info") => {
     setToast({ msg, kind });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  // ---------- Benachrichtigung bei neuen Einträgen (In-App, App offen) ----------
+  // Zeigt eine System-Benachrichtigung, wenn per Live-Sync ein neuer Eintrag
+  // ankommt – aber nur für Einträge von ANDEREN (nicht den eigenen, eben
+  // angelegten) und nur wenn der Nutzer Benachrichtigungen aktiviert hat.
+  const notifyNew = useCallback((oldArr, newArr, label, getCreator) => {
+    if (!notifyReadyRef.current) return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    const oldIds = new Set((oldArr || []).map((x) => x.id));
+    const fresh = (newArr || []).filter(
+      (x) => x && x.id && !oldIds.has(x.id) && getCreator(x) !== activeUserIdRef.current
+    );
+    if (!fresh.length) return;
+    try {
+      if (fresh.length > 2) {
+        new Notification(`${label.icon} ${fresh.length} neue ${label.pl}`, { tag: `new-${label.sg}-batch` });
+      } else {
+        for (const x of fresh) {
+          const u = usersRef.current.find((y) => y.id === getCreator(x));
+          new Notification(`${label.icon} Neuer Eintrag: ${label.sg}`, {
+            body: `${x.title || "(ohne Titel)"}${u ? " · von " + u.name : ""}`,
+            tag: `new-${label.sg}-${x.id}`,
+          });
+        }
+      }
+    } catch {}
   }, []);
 
   // ---------- Laden ----------
@@ -190,6 +223,7 @@ export default function App() {
       shopStoreRef.current = stores; setShopStore(stores);
       if (Object.keys(stEff).length) setSettings((s) => ({ ...s, ...stEff }));
       setLoaded(true);
+      notifyReadyRef.current = true; // ab jetzt bei neuen Einträgen benachrichtigen
     })();
     return () => { on = false; };
   }, []);
@@ -210,6 +244,11 @@ export default function App() {
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
+      // Neue Einträge (von anderen) erkennen und benachrichtigen – VOR dem Ref-Update,
+      // damit der bisherige Stand noch zum Vergleich vorliegt.
+      notifyNew(eventsRef.current, ev, { sg: "Termin", pl: "Termine", icon: "📅" }, (x) => x.creatorId);
+      notifyNew(tasksRef.current, tk, { sg: "Aufgabe", pl: "Aufgaben", icon: "✅" }, (x) => x.addedBy);
+      notifyNew(gossipRef.current, go, { sg: "Gossip", pl: "Gossip-Einträge", icon: "🍵" }, (x) => x.addedBy);
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);
