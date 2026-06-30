@@ -339,7 +339,7 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
   const tasksDone = tasks.filter((x) => x.done).length;
 
   // „Zuletzt hinzugefügt": Termine und Gossip nach createdAt, neueste zuerst.
-  const RECENT_DAYS = 14, RECENT_MAX = 8;
+  const RECENT_DAYS = 2, RECENT_MAX = 8;
   const cutoff = Date.now() - RECENT_DAYS * 86400000;
   const recent = [
     ...allEvents.map((x) => ({ kind: "event", item: x, ts: x.createdAt, title: x.title,
@@ -408,7 +408,7 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
           {recent.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({recent.length})</span>}
         </div>
         {recent.length === 0 ? (
-          <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>Nichts Neues in den letzten 14 Tagen.</div>
+          <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>Nichts Neues in den letzten 2 Tagen.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {recent.map((r, i) => {
