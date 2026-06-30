@@ -338,14 +338,12 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
   const tasksOpen = tasks.filter((x) => !x.done).length;
   const tasksDone = tasks.filter((x) => x.done).length;
 
-  // „Zuletzt hinzugefügt": Termine, Aufgaben und Gossip nach createdAt, neueste zuerst.
+  // „Zuletzt hinzugefügt": Termine und Gossip nach createdAt, neueste zuerst.
   const RECENT_DAYS = 14, RECENT_MAX = 8;
   const cutoff = Date.now() - RECENT_DAYS * 86400000;
   const recent = [
     ...allEvents.map((x) => ({ kind: "event", item: x, ts: x.createdAt, title: x.title,
       who: x.creatorId, icon: x.icon || (ctx.typeById(x.typeId)?.icon) || "📅", label: "Termin" })),
-    ...tasks.map((x) => ({ kind: "task", item: x, ts: x.createdAt, title: x.title,
-      who: x.addedBy, icon: "✅", label: "Aufgabe" })),
     ...gossip.map((x) => ({ kind: "gossip", item: x, ts: x.createdAt, title: x.title,
       who: x.addedBy, icon: "🍵", label: "Gossip" })),
   ].filter((r) => r.ts && r.ts >= cutoff).sort((a, b) => b.ts - a.ts).slice(0, RECENT_MAX);
