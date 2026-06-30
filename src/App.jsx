@@ -567,7 +567,8 @@ export default function App() {
 
         {/* ===== Ansicht ===== */}
         {view === "dashboard" && (
-          <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks} onSelect={openEvent} />
+          <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks} gossip={gossip}
+            onSelect={openEvent} onOpenTab={changeView} />
         )}
         {view === "day" && <DayView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent} />}
         {view === "week" && <WeekView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}

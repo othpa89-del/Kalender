@@ -328,7 +328,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 // ---------------------------------------------------------------------
 //  DASHBOARD / STARTSEITE
 // ---------------------------------------------------------------------
-export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect }) {
+export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelect, onOpenTab }) {
   const today = todayISO();
   const todays = occ7.filter((e) => e.date === today);
   const next7 = occ7.filter((e) => e.date > today);
@@ -337,6 +337,35 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect }) {
   const bizCount = occ7.length - privCount;
   const tasksOpen = tasks.filter((x) => !x.done).length;
   const tasksDone = tasks.filter((x) => x.done).length;
+
+  // „Zuletzt hinzugefügt": Termine, Aufgaben und Gossip nach createdAt, neueste zuerst.
+  const RECENT_DAYS = 14, RECENT_MAX = 8;
+  const cutoff = Date.now() - RECENT_DAYS * 86400000;
+  const recent = [
+    ...allEvents.map((x) => ({ kind: "event", item: x, ts: x.createdAt, title: x.title,
+      who: x.creatorId, icon: x.icon || (ctx.typeById(x.typeId)?.icon) || "📅", label: "Termin" })),
+    ...tasks.map((x) => ({ kind: "task", item: x, ts: x.createdAt, title: x.title,
+      who: x.addedBy, icon: "✅", label: "Aufgabe" })),
+    ...gossip.map((x) => ({ kind: "gossip", item: x, ts: x.createdAt, title: x.title,
+      who: x.addedBy, icon: "🍵", label: "Gossip" })),
+  ].filter((r) => r.ts && r.ts >= cutoff).sort((a, b) => b.ts - a.ts).slice(0, RECENT_MAX);
+
+  function relTime(ts) {
+    const min = Math.floor((Date.now() - ts) / 60000);
+    if (min < 1) return "gerade eben";
+    if (min < 60) return `vor ${min} Min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `vor ${h} Std`;
+    const d = Math.floor(h / 24);
+    if (d === 1) return "gestern";
+    if (d < 7) return `vor ${d} Tagen`;
+    const dt = new Date(ts);
+    return `${String(dt.getDate()).padStart(2, "0")}.${String(dt.getMonth() + 1).padStart(2, "0")}.`;
+  }
+  function openRecent(r) {
+    if (r.kind === "event") onSelect(r.item);
+    else if (onOpenTab) onOpenTab(r.kind === "task" ? "tasks" : "gossip");
+  }
 
   const Card = ({ title, count, icon, sub }) => (
     <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 11, padding: "9px 11px", flex: "1 1 110px" }}>
@@ -372,6 +401,47 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, onSelect }) {
         <Card title="Nächste 7 Tage" count={next7.length} icon="🗓️" />
         <Card title="Privat" count={privCount} icon="🏠" sub={`Geschäftlich: ${bizCount}`} />
         <Card title="Aufgaben offen" count={tasksOpen} icon="✅" sub={`Erledigt: ${tasksDone}`} />
+      </div>
+
+      {/* Zuletzt hinzugefügt */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>🆕 Zuletzt hinzugefügt</h3>
+          {recent.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({recent.length})</span>}
+        </div>
+        {recent.length === 0 ? (
+          <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>Nichts Neues in den letzten 14 Tagen.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {recent.map((r, i) => {
+              const who = ctx.userById(r.who);
+              return (
+                <button key={r.kind + (r.item.id || i)} onClick={() => openRecent(r)} style={{
+                  display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
+                  background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
+                  padding: "8px 11px", cursor: "pointer", fontFamily: "inherit", color: t.text,
+                }}>
+                  <span style={{ fontSize: 17, flex: "none" }}>{r.icon}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{
+                      display: "block", fontWeight: 700, fontSize: 13.5, overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>{r.title || "(ohne Titel)"}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: 11.5, color: t.muted }}>
+                      <span style={{ fontWeight: 700 }}>{r.label}</span>
+                      {who && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: who.color }} />
+                        {who.name}
+                      </span>}
+                      <span>· {relTime(r.ts)}</span>
+                    </span>
+                  </span>
+                  <span style={{ flex: "none", fontSize: 15, color: t.faint }}>›</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Section title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
