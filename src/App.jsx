@@ -214,6 +214,17 @@ export default function App() {
         stEff = { ...stEff, seededShopStoreV1: true };
         saveJSON(K_SETTINGS, stEff);
       }
+      // „Allgemein"-Liste einmalig ergänzen (auch für bestehende Nutzer) – sie ist
+      // die Standardliste beim Öffnen. Ganz nach vorne, damit sie zuerst steht.
+      if (!stEff.addedAllgemeinListV1) {
+        if (!stores.some((s) => (s.name || "").trim().toLowerCase() === "allgemein")) {
+          const allg = { id: `store_allgemein`, name: "Allgemein" };
+          saveJSON(P_SHOPSTORE + allg.id, allg);
+          stores = [allg, ...stores];
+        }
+        stEff = { ...stEff, addedAllgemeinListV1: true };
+        saveJSON(K_SETTINGS, stEff);
+      }
       eventsRef.current = ev; setEvents(ev);
       tasksRef.current = tk; setTasks(tk);
       shoppingRef.current = sh; setShopping(sh);

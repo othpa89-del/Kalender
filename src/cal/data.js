@@ -99,7 +99,7 @@ export const DEFAULT_SHOP_FAVS = [
 ];
 
 // --- Geschäfte (Standard; in der App frei änderbar) --------------------
-export const DEFAULT_SHOP_STORES = ["Billa", "Hofer", "Spar", "Lidl", "DM"];
+export const DEFAULT_SHOP_STORES = ["Allgemein", "Billa", "Hofer", "Spar", "Lidl", "DM"];
 
 // --- Schnellanlage-Vorlagen -------------------------------------------
 // Eine Kachel setzt beim Antippen Titel UND Icon des Termins. Priorität,

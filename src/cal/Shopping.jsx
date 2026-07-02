@@ -54,8 +54,10 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   const sel = inputStyle(t);
   const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
 
+  // Standardliste beim Öffnen: „Allgemein" (falls vorhanden), sonst die erste.
+  const defaultList = lists.find((l) => (l.name || "").trim().toLowerCase() === "allgemein") || lists[0];
   // aktive Liste absichern (z. B. nach Löschen)
-  const activeId = lists.some((l) => l.id === activeList) ? activeList : (lists[0] ? lists[0].id : "");
+  const activeId = lists.some((l) => l.id === activeList) ? activeList : (defaultList ? defaultList.id : "");
   const itemListId = (x) => x.list || (lists[0] ? lists[0].id : ""); // Altartikel -> erste Liste
   const inActive = (x) => itemListId(x) === activeId;
 
