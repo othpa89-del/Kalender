@@ -258,6 +258,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   }
 
   const cols = "20px repeat(7,1fr)";
+  const weekendTint = t.mode === "dark" ? "rgba(229,115,154,.10)" : "rgba(229,115,154,.08)";
   return (
     <div>
       {/* Wochentagskopf */}
@@ -273,7 +274,16 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
         const { placed, overflow } = weekBars(weekDays);
         const ofIdx = Object.keys(overflow);
         return (
-          <div key={"w" + w} className="cal-week" style={{ borderTop: `1px solid ${t.borderSoft}`, paddingTop: 2, marginBottom: 3 }}>
+          <div key={"w" + w} className="cal-week" style={{ position: "relative", borderTop: `1px solid ${t.borderSoft}`, paddingTop: 2, marginBottom: 3 }}>
+            {/* Wochenend-Hintergrund (dezent) */}
+            <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: cols, gap: 3, pointerEvents: "none" }}>
+              <div />
+              {weekDays.map((d, di) => {
+                const wd = (d.getDay() + 6) % 7;
+                return <div key={di} style={{ background: wd >= 5 ? weekendTint : "transparent", borderRadius: 4 }} />;
+              })}
+            </div>
+            <div style={{ position: "relative", zIndex: 1 }}>
             {/* Tageszahlen + KW */}
             <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, alignItems: "center" }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: t.faint, textAlign: "center" }}>{isoWeek(toISODate(weekDays[0]))}</div>
@@ -314,6 +324,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                   fontSize: 8.5, fontWeight: 800, color: t.muted, textAlign: "center", lineHeight: "12px",
                 }}>+{overflow[idx]}</div>
               ))}
+            </div>
             </div>
           </div>
         );
@@ -366,13 +377,13 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
   }
 
   const Card = ({ title, count, icon, sub }) => (
-    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 11, padding: "9px 11px", flex: "1 1 110px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span style={{ fontSize: 15 }}>{icon}</span>
-        <span style={{ fontSize: 21, fontWeight: 800, color: t.text, lineHeight: 1.1 }}>{count}</span>
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "6px 9px", flex: "1 1 84px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+        <span style={{ fontSize: 13 }}>{icon}</span>
+        <span style={{ fontSize: 17, fontWeight: 800, color: t.text, lineHeight: 1.05 }}>{count}</span>
       </div>
-      <div style={{ fontSize: 11.5, color: t.muted, fontWeight: 700, marginTop: 1 }}>{title}</div>
-      {sub && <div style={{ fontSize: 10.5, color: t.faint }}>{sub}</div>}
+      <div style={{ fontSize: 10.5, color: t.muted, fontWeight: 700, marginTop: 1 }}>{title}</div>
+      {sub && <div style={{ fontSize: 9.5, color: t.faint }}>{sub}</div>}
     </div>
   );
 
@@ -394,7 +405,7 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
 
   return (
     <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
         <Card title="Heute" count={todays.length} icon="📅" />
         <Card title="Nächste 7 Tage" count={next7.length} icon="🗓️" />
         <Card title="Privat" count={privCount} icon="🏠" sub={`Geschäftlich: ${bizCount}`} />

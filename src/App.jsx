@@ -456,6 +456,30 @@ export default function App() {
   const showNav = ["day", "week", "month"].includes(view);
   const isList = ["tasks", "shopping", "notes", "gossip"].includes(view); // eigene Eingabe, kein Termin-Toolbar
 
+  // ---------- Globale Suche über alle Bereiche ----------
+  const q = search.trim().toLowerCase();
+  const searching = q.length > 0;
+  const hay = (...parts) => parts.filter(Boolean).join(" ").toLowerCase();
+  const searchResults = !searching ? [] : [
+    ...events.filter((x) => hay(x.title, x.description, x.location, x.address, x.notes).includes(q))
+      .map((x) => ({ kind: "event", item: x, ts: x.createdAt, title: x.title, who: x.creatorId,
+        icon: x.icon || typeById(x.typeId)?.icon || "📅", label: "Termin",
+        sub: `${x.date?.slice(8, 10)}.${x.date?.slice(5, 7)}.` })),
+    ...tasks.filter((x) => hay(x.title, x.description).includes(q))
+      .map((x) => ({ kind: "tasks", item: x, ts: x.createdAt, title: x.title, who: x.addedBy, icon: "✅", label: "Aufgabe" })),
+    ...shopping.filter((x) => hay(x.text).includes(q))
+      .map((x) => ({ kind: "shopping", item: x, ts: x.createdAt, title: x.text, who: x.addedBy, icon: "🛒", label: "Einkauf" })),
+    ...notes.filter((x) => hay(x.title, x.text).includes(q))
+      .map((x) => ({ kind: "notes", item: x, ts: x.createdAt, title: x.title || x.text, who: x.addedBy, icon: "💡", label: "Nice to know" })),
+    ...gossip.filter((x) => hay(x.title, x.text).includes(q))
+      .map((x) => ({ kind: "gossip", item: x, ts: x.createdAt, title: x.title || x.text, who: x.addedBy, icon: "🍵", label: "Gossip" })),
+  ].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  function openResult(r) {
+    if (r.kind === "event") { openEvent(r.item); return; }
+    changeView(r.kind);   // zum passenden Tab wechseln …
+    setSearch("");        // … und Suche leeren, damit der Tab angezeigt wird
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90, zoom: 0.9 }}>
       {/* ===== Header ===== */}
@@ -515,7 +539,7 @@ export default function App() {
 
       <main style={{ maxWidth: 980, margin: "0 auto", padding: "14px 12px" }}>
         {/* ===== Schnellanlage (nur auf der Startseite) ===== */}
-        {view === "dashboard" && (
+        {view === "dashboard" && !searching && (
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>SCHNELLANLAGE</span>
@@ -536,14 +560,14 @@ export default function App() {
         )}
 
         {/* ===== Suche & Filter ===== */}
-        {!isList && (
-          <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche in Titel, Beschreibung, Ort…"
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche über alles (Termine, Aufgaben, Einkauf, Notizen, Gossip)…"
                 style={{ flex: 1, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-              <Btn t={t} kind={showFilters ? "primary" : "ghost"} onClick={() => setShowFilters((o) => !o)}>Filter</Btn>
+              {search && <Btn t={t} kind="ghost" onClick={() => setSearch("")} style={{ flex: "none" }}>✕</Btn>}
+              {!isList && <Btn t={t} kind={showFilters ? "primary" : "ghost"} onClick={() => setShowFilters((o) => !o)}>Filter</Btn>}
             </div>
-            {showFilters && (
+            {!isList && showFilters && (
               <div style={{ marginTop: 10, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", gap: 12 }}>
                 <FilterSelect t={t} label="Benutzer" value={fUser} onChange={setFUser}
                   options={[["all", "Alle"], ...users.map((u) => [u.id, u.name])]} />
@@ -564,10 +588,14 @@ export default function App() {
               </div>
             )}
           </div>
+
+        {/* ===== Globale Suchergebnisse ===== */}
+        {searching && (
+          <SearchResults t={t} results={searchResults} userById={userById} onOpen={openResult} query={search} />
         )}
 
         {/* ===== Datums-Navigation ===== */}
-        {showNav && (
+        {showNav && !searching && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
             <Btn t={t} kind="soft" onClick={() => navStep(-1)}>‹</Btn>
             <Btn t={t} kind="soft" onClick={goToday}>Heute</Btn>
@@ -577,19 +605,19 @@ export default function App() {
         )}
 
         {/* ===== Ansicht ===== */}
-        {view === "dashboard" && (
+        {!searching && view === "dashboard" && (
           <Dashboard t={t} ctx={ctx} allEvents={events} occ7={occ} tasks={tasks} gossip={gossip}
             onSelect={openEvent} onOpenTab={changeView} />
         )}
-        {view === "day" && <DayView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent} />}
-        {view === "week" && <WeekView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
+        {!searching && view === "day" && <DayView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent} />}
+        {!searching && view === "week" && <WeekView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
-        {view === "month" && <MonthView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
+        {!searching && view === "month" && <MonthView t={t} ctx={ctx} dateISO={cursor} occ={occ} onSelect={openEvent}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
-        {view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
-        {view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
-        {view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
-        {view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
+        {!searching && view === "tasks" && <Tasks t={t} ctx={ctx} tasks={tasks} setTasks={persist.tasks} />}
+        {!searching && view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
+        {!searching && view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
+        {!searching && view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
 
         {/* ===== Copyright (dezent, erscheint auch beim Drucken/PDF) ===== */}
         <div className="app-copyright" style={{
@@ -655,5 +683,52 @@ function FilterSelect({ t, label, value, onChange, options }) {
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>
+  );
+}
+
+// Globale Suchergebnisse über alle Bereiche
+function SearchResults({ t, results, userById, onOpen, query }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>🔍 Suchergebnisse</h3>
+        <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({results.length})</span>
+      </div>
+      {results.length === 0 ? (
+        <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>
+          Nichts gefunden für „{query.trim()}".
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {results.map((r, i) => {
+            const who = userById && userById(r.who);
+            return (
+              <button key={r.kind + (r.item.id || i)} onClick={() => onOpen(r)} style={{
+                display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
+                background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
+                padding: "8px 11px", cursor: "pointer", fontFamily: "inherit", color: t.text,
+              }}>
+                <span style={{ fontSize: 17, flex: "none" }}>{r.icon}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{
+                    display: "block", fontWeight: 700, fontSize: 13.5, overflow: "hidden",
+                    textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>{r.title || "(ohne Titel)"}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: 11.5, color: t.muted }}>
+                    <span style={{ fontWeight: 700 }}>{r.label}</span>
+                    {r.sub && <span>· {r.sub}</span>}
+                    {who && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: who.color }} />
+                      {who.name}
+                    </span>}
+                  </span>
+                </span>
+                <span style={{ flex: "none", fontSize: 15, color: t.faint }}>›</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

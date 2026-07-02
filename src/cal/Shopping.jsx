@@ -51,6 +51,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   const [listText, setListText] = useState("");
   const [renId, setRenId] = useState(null);     // umzubenennende Liste
   const [renText, setRenText] = useState("");
+  const [showDone, setShowDone] = useState(false); // erledigte Artikel ein-/ausklappen
   const sel = inputStyle(t);
   const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
 
@@ -315,15 +316,22 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
             </div>
           ))}
 
-          {/* erledigte Artikel */}
+          {/* erledigte Artikel – einklappbar */}
           {done.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".02em", marginBottom: 6 }}>
+              <button onClick={() => setShowDone((s) => !s)} style={{
+                display: "flex", alignItems: "center", gap: 6, width: "100%", background: "none",
+                border: "none", padding: "2px 0", marginBottom: 6, cursor: "pointer", fontFamily: "inherit",
+                fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".02em",
+              }}>
+                <span style={{ fontSize: 10, transform: showDone ? "rotate(90deg)" : "none", transition: "transform .15s" }}>▶</span>
                 ERLEDIGT ({done.length})
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {done.map((x) => <Item key={x.id} x={x} />)}
-              </div>
+              </button>
+              {showDone && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  {done.map((x) => <Item key={x.id} x={x} />)}
+                </div>
+              )}
             </div>
           )}
         </div>
