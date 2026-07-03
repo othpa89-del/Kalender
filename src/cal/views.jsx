@@ -341,7 +341,9 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 // ---------------------------------------------------------------------
 export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelect, onOpenTab }) {
   const today = todayISO();
+  const tomorrow = toISODate(addDays(parseISODate(today), 1));
   const todays = occ7.filter((e) => e.date === today);
+  const tomorrows = occ7.filter((e) => e.date === tomorrow);
   const next7 = occ7.filter((e) => e.date > today);
   const privArea = ctx.areas.find((a) => /privat/i.test(a.name));
   const privCount = occ7.filter((e) => privArea && e.areaId === privArea.id).length;
@@ -454,6 +456,7 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
       </div>
 
       <Section title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
+      <Section title="Morgen" items={tomorrows} empty="Morgen keine Termine." badge={tomorrows.length} />
     </div>
   );
 }
