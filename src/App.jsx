@@ -544,14 +544,14 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>SCHNELLANLAGE</span>
             </div>
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
               {QUICK_TEMPLATES.map((q) => {
                 const icon = q.icon || typeById(q.typeId)?.icon || "📌";
                 return (
                   <button key={q.id} onClick={() => openQuick(q)} style={{
-                    display: "flex", alignItems: "center", gap: 6, background: t.surface, color: t.text,
-                    border: `1px solid ${t.border}`, borderRadius: 22, padding: "8px 13px",
-                    fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                    display: "flex", alignItems: "center", gap: 5, background: t.surface, color: t.text,
+                    border: `1px solid ${t.border}`, borderRadius: 20, padding: "6px 11px",
+                    fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                   }}>{icon} {q.label}</button>
                 );
               })}

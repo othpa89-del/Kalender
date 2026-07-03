@@ -344,12 +344,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
   const tomorrow = toISODate(addDays(parseISODate(today), 1));
   const todays = occ7.filter((e) => e.date === today);
   const tomorrows = occ7.filter((e) => e.date === tomorrow);
-  const next7 = occ7.filter((e) => e.date > today);
-  const privArea = ctx.areas.find((a) => /privat/i.test(a.name));
-  const privCount = occ7.filter((e) => privArea && e.areaId === privArea.id).length;
-  const bizCount = occ7.length - privCount;
-  const tasksOpen = tasks.filter((x) => !x.done).length;
-  const tasksDone = tasks.filter((x) => x.done).length;
 
   // „Zuletzt hinzugefügt": Termine und Gossip nach createdAt, neueste zuerst.
   const RECENT_DAYS = 2, RECENT_MAX = 8;
@@ -378,17 +372,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
     else if (onOpenTab) onOpenTab(r.kind === "task" ? "tasks" : "gossip");
   }
 
-  const Card = ({ title, count, icon, sub }) => (
-    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "6px 9px", flex: "1 1 84px" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-        <span style={{ fontSize: 13 }}>{icon}</span>
-        <span style={{ fontSize: 17, fontWeight: 800, color: t.text, lineHeight: 1.05 }}>{count}</span>
-      </div>
-      <div style={{ fontSize: 10.5, color: t.muted, fontWeight: 700, marginTop: 1 }}>{title}</div>
-      {sub && <div style={{ fontSize: 9.5, color: t.faint }}>{sub}</div>}
-    </div>
-  );
-
   const Section = ({ title, items, empty, badge }) => (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -407,13 +390,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
 
   return (
     <div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-        <Card title="Heute" count={todays.length} icon="📅" />
-        <Card title="Nächste 7 Tage" count={next7.length} icon="🗓️" />
-        <Card title="Privat" count={privCount} icon="🏠" sub={`Geschäftlich: ${bizCount}`} />
-        <Card title="Aufgaben offen" count={tasksOpen} icon="✅" sub={`Erledigt: ${tasksDone}`} />
-      </div>
-
       {/* Zuletzt hinzugefügt */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
