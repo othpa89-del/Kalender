@@ -17,7 +17,6 @@ import { Tasks } from "./cal/Tasks.jsx";
 import { Shopping } from "./cal/Shopping.jsx";
 import { NiceToKnow } from "./cal/NiceToKnow.jsx";
 import { Gossip } from "./cal/Gossip.jsx";
-import { useRegisterSW } from "virtual:pwa-register/react";
 
 // ---- persistente Schlüssel ----------------------------------------------
 // Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
@@ -120,11 +119,6 @@ export default function App() {
   const t = theme(settings.themeMode);
   activeUserIdRef.current = settings.activeUserId;
   usersRef.current = users;
-
-  // PWA-Update: erkennt eine neue Version und zeigt „Neue Version verfügbar".
-  const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW({
-    onRegisteredSW(_url, r) { if (r) setInterval(() => { r.update(); }, 60 * 60 * 1000); },
-  });
 
   const flash = useCallback((msg, kind = "info") => {
     setToast({ msg, kind });
@@ -713,27 +707,6 @@ export default function App() {
       )}
 
       <Toast t={t} toast={toast} />
-
-      {/* PWA-Update-Hinweis: „Neue Version verfügbar" → „Jetzt neu laden" */}
-      {needRefresh && (
-        <div style={{
-          position: "fixed", left: "50%", transform: "translateX(-50%)",
-          bottom: "calc(84px + env(safe-area-inset-bottom))", zIndex: 450,
-          background: "#232733", color: "#fff", borderRadius: 16, padding: "12px 14px",
-          display: "flex", alignItems: "center", gap: 12, maxWidth: "92vw",
-          boxShadow: "0 12px 34px rgba(0,0,0,.45)",
-        }}>
-          <span style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.25 }}>Neue Version verfügbar.</span>
-          <button onClick={() => updateServiceWorker(true)} style={{
-            background: "#B0347A", color: "#fff", border: "none", borderRadius: 10,
-            padding: "8px 13px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", lineHeight: 1.15,
-          }}>Jetzt neu laden</button>
-          <button onClick={() => setNeedRefresh(false)} aria-label="Schließen" style={{
-            background: "none", border: "none", color: "#cfd6e4", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: 2,
-          }}>×</button>
-        </div>
-      )}
-
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 110 }} />}
     </div>
   );
