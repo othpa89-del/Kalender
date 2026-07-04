@@ -15,8 +15,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: "auto",
+      registerType: "prompt",
+      injectRegister: null,
       includeAssets: ["apple-touch-icon-v2.png", "favicon-v2.ico", "favicon-32-v2.png"],
       manifest: {
         name: "Kalender – Familie & Business",
