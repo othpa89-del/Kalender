@@ -3,13 +3,14 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { readFileSync } from "fs";
 
-// App-Version aus package.json (wird in der Fußzeile angezeigt).
+// App-Version aus package.json (wird in der Fußzeile angezeigt – nur Major.Minor, z. B. 1.1).
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url)));
+const shortVersion = pkg.version.split(".").slice(0, 2).join(".");
 
 // base wird im GitHub-Workflow automatisch auf /<repo-name>/ gesetzt (--base).
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_VERSION__: JSON.stringify(shortVersion),
   },
   plugins: [
     react(),
