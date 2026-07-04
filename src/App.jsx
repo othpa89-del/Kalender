@@ -560,6 +560,7 @@ export default function App() {
                     border: `1px solid ${t.border}`, borderRadius: 10, boxShadow: t.shadow, padding: 6, width: 232, zIndex: 130,
                   }}>
                     {[
+                      ["🔄 App neu laden", reloadApp],
                       ["🔔 Benachrichtigungen aktivieren", requestNotifications],
                       ["📤 Export ICS (Outlook/Google/Apple)", exportICS],
                       ["💾 JSON-Backup", exportJSON],
