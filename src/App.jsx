@@ -114,6 +114,7 @@ export default function App() {
   const notifyReadyRef = useRef(false);     // erst nach dem ersten Laden benachrichtigen
   const activeUserIdRef = useRef(null);     // aktueller Benutzer (frisch, nicht aus Closure)
   const usersRef = useRef([]);
+  const fileInputRef = useRef(null);        // versteckter Datei-Input für Backup-Import
 
   const t = theme(settings.themeMode);
   activeUserIdRef.current = settings.activeUserId;
@@ -430,6 +431,36 @@ export default function App() {
     flash("JSON-Backup exportiert.");
     setMenuOpen(false);
   }
+  // JSON-Backup wiederherstellen: liest die Datei, ersetzt alle Sammlungen.
+  // persist.* difft gegen den aktuellen Stand -> entfernte Einträge werden gelöscht,
+  // vorhandene aktualisiert (robuster Restore über alle Geräte).
+  function importJSON(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      let d;
+      try { d = JSON.parse(reader.result); }
+      catch { flash("Backup konnte nicht gelesen werden (kein gültiges JSON).", "error"); return; }
+      if (!d || typeof d !== "object") { flash("Ungültige Backup-Datei.", "error"); return; }
+      if (typeof window !== "undefined" &&
+        !window.confirm("Aktuelle Daten werden durch das Backup ersetzt. Fortfahren?")) return;
+      if (Array.isArray(d.users) && d.users.length) persist.users(d.users);
+      if (Array.isArray(d.areas) && d.areas.length) persist.areas(d.areas);
+      if (Array.isArray(d.types) && d.types.length) persist.types(d.types);
+      if (Array.isArray(d.events)) persist.events(d.events);
+      if (Array.isArray(d.tasks)) persist.tasks(d.tasks);
+      if (Array.isArray(d.shopping)) persist.shopping(d.shopping);
+      if (Array.isArray(d.notes)) persist.notes(d.notes);
+      if (Array.isArray(d.gossip)) persist.gossip(d.gossip);
+      if (Array.isArray(d.shopFav)) persist.shopFav(d.shopFav);
+      if (Array.isArray(d.shopStore)) persist.shopStore(d.shopStore);
+      if (d.settings && typeof d.settings === "object") persist.settings({ ...settings, ...d.settings });
+      flash("Backup wiederhergestellt.");
+      setMenuOpen(false);
+    };
+    reader.onerror = () => flash("Backup konnte nicht gelesen werden.", "error");
+    reader.readAsText(file);
+  }
 
   if (!loaded) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg, color: t.muted, fontFamily: FONT }}>Kalender lädt …</div>;
@@ -512,6 +543,7 @@ export default function App() {
                       ["🔔 Benachrichtigungen aktivieren", requestNotifications],
                       ["📤 Export ICS (Outlook/Google/Apple)", exportICS],
                       ["💾 JSON-Backup", exportJSON],
+                      ["📥 Backup wiederherstellen", () => { setMenuOpen(false); fileInputRef.current?.click(); }],
                     ].map(([label, fn]) => (
                       <button key={label} onClick={fn} style={menuItem(t)}>{label}</button>
                     ))}
@@ -625,6 +657,10 @@ export default function App() {
           textAlign: "center", fontSize: 10.5, color: t.faint, fontWeight: 600, letterSpacing: ".02em",
         }}>© Copyright by Patrick Thorn · v{__APP_VERSION__}</div>
       </main>
+
+      {/* Versteckter Datei-Input für „Backup wiederherstellen" */}
+      <input ref={fileInputRef} type="file" accept="application/json,.json" style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) importJSON(f); e.target.value = ""; }} />
 
       {/* ===== Neuer-Termin-Button ===== */}
       {!isList && (

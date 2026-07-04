@@ -156,14 +156,24 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const ws = startOfWeek(parseISODate(dateISO));
   const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   const today = todayISO();
+  const [hideEmpty, setHideEmpty] = React.useState(false);
+  const dayHas = (d) => occ.some((e) => e.date === toISODate(d));
+  const emptyCount = days.filter((d) => !dayHas(d) && toISODate(d) !== today).length;
+  const shownDays = days.filter((d) => !hideEmpty || dayHas(d) || toISODate(d) === today);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ marginBottom: 2 }}>
+      <div style={{ marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 800, color: "#fff", background: t.accent, borderRadius: 7, padding: "3px 10px" }}>
           KW {isoWeek(toISODate(ws))}
         </span>
+        {emptyCount > 0 && (
+          <button onClick={() => setHideEmpty((v) => !v)} style={{
+            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+            fontSize: 12.5, fontWeight: 700, color: t.accent,
+          }}>{hideEmpty ? "Leere Tage anzeigen" : `Leere Tage ausblenden (${emptyCount})`}</button>
+        )}
       </div>
-      {days.map((d) => {
+      {shownDays.map((d) => {
         const iso = toISODate(d);
         const items = occ.filter((e) => e.date === iso);
         const conflicts = dayConflictSet(items);
@@ -310,7 +320,8 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
                 const icon = p.ev.icon || (type && type.icon) || "📌";
                 return (
-                  <button key={p.ev.id + "_" + p.startIdx + "_" + i} className="cal-bar" onClick={() => onSelect(p.ev)} title={p.ev.title} style={{
+                  <button key={p.ev.id + "_" + p.startIdx + "_" + i} className="cal-bar" onClick={() => onSelect(p.ev)}
+                    title={`${p.ev.title || "(ohne Titel)"} · ${occTimeLabel(p.ev)}`} style={{
                     gridColumn: `${p.startIdx + 2} / span ${p.span}`, gridRow: p.lane + 1,
                     background: bg, color: "#fff", border: "none", borderRadius: 4, fontSize: 9.5, fontWeight: 700,
                     padding: "0 3px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
@@ -319,10 +330,12 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 );
               })}
               {ofIdx.map((idx) => (
-                <div key={"of" + idx} style={{
-                  gridColumn: `${Number(idx) + 2} / span 1`, gridRow: MONTH_MAX_LANES + 1,
-                  fontSize: 8.5, fontWeight: 800, color: t.muted, textAlign: "center", lineHeight: "12px",
-                }}>+{overflow[idx]}</div>
+                <button key={"of" + idx} onClick={() => onPickDay(toISODate(weekDays[Number(idx)]))}
+                  title="Alle Termine des Tages öffnen" style={{
+                    gridColumn: `${Number(idx) + 2} / span 1`, gridRow: MONTH_MAX_LANES + 1,
+                    fontSize: 8.5, fontWeight: 800, color: t.accent, textAlign: "center", lineHeight: "12px",
+                    background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0,
+                  }}>+{overflow[idx]}</button>
               ))}
             </div>
             </div>
