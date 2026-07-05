@@ -120,24 +120,24 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
       ) : visible.length === 0 ? (
         <div style={{ color: t.faint, padding: "20px 4px", fontSize: 14 }}>Keine Notizen in dieser Rubrik.</div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {visible.map((x) => {
             const r = rubrikById(x.rubrik);
             const who = ctx.userById && ctx.userById(x.addedBy);
             return (
-              <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: "12px 14px" }}>
+              <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {x.title && <div style={{ fontWeight: 800, fontSize: 15, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}
-                    {x.text && <div style={{ fontSize: 14, color: t.muted, marginTop: x.title ? 4 : 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{x.text}</div>}
-                    {r && r.id && (
-                      <span style={{ display: "inline-block", marginTop: 8, fontSize: 12, fontWeight: 700, color: t.text, background: t.chip, border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "3px 10px" }}>
-                        {r.icon} {r.name}
-                      </span>
-                    )}
-                    {who && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12, color: t.muted }}>
-                        <Dot color={who.color} size={9} /> {who.name}
+                    {x.title && <div style={{ fontWeight: 700, fontSize: 14, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}
+                    {x.text && <div style={{ fontSize: 12.5, color: t.muted, marginTop: x.title ? 2 : 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{x.text}</div>}
+                    {(( r && r.id) || who) && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap", fontSize: 11.5, color: t.muted }}>
+                        {r && r.id && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 700, color: t.text, background: t.chip, border: `1px solid ${t.borderSoft}`, borderRadius: 14, padding: "1px 8px" }}>
+                            {r.icon} {r.name}
+                          </span>
+                        )}
+                        {who && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Dot color={who.color} size={9} /> {who.name}</span>}
                       </div>
                     )}
                   </div>
@@ -155,4 +155,4 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   );
 }
 
-const iconBtn = { background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 3, borderRadius: 6, lineHeight: 1 };
+const iconBtn = { background: "none", border: "none", cursor: "pointer", fontSize: 15, padding: 3, borderRadius: 6, lineHeight: 1 };
