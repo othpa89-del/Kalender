@@ -525,7 +525,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90, zoom: 0.9 }}>
+    <div className="app-root" style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90, zoom: 0.9 }}>
       {/* ===== Header ===== */}
       <header style={{ background: t.navy, color: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.25)" }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) 14px 10px" }}>

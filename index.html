@@ -20,6 +20,16 @@
       * { box-sizing: border-box; }
       /* Eingabefelder dürfen ihren Container nie sprengen (v. a. iOS date/time) */
       input, select, textarea { max-width: 100%; min-width: 0; }
+      /* Nur Desktop: kein 0.9-Zoom (das macht am großen Bildschirm unscharf und
+         lässt die Schrift zu fett wirken) + sauberes Antialiasing. Handy/iPad
+         behalten die kompakte 0.9-Darstellung. */
+      @media (min-width: 1024px) and (pointer: fine) {
+        .app-root {
+          zoom: 1 !important;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+      }
       /* Desktop/Tablet: Monatsansicht großzügiger, damit sie wie ein echter
          Kalender wirkt (am Handy bleibt die kompakte Darstellung). */
       @media (min-width: 760px) {
