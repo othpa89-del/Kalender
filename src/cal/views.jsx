@@ -74,7 +74,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
     <div>
       <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 10, color: t.text }}>
         {fmtDateLong(dateISO)}
-        <span style={{ fontWeight: 800, color: "#fff", background: t.accent, fontSize: 12, marginLeft: 8, borderRadius: 6, padding: "2px 7px" }}>KW {isoWeek(dateISO)}</span>
+        {/* KW steht bereits im Navigations-Titel oben – hier nicht doppelt. */}
         <span style={{ fontWeight: 600, color: t.muted, fontSize: 13, marginLeft: 8 }}>
           {dayItems.length} {dayItems.length === 1 ? "Termin" : "Termine"}
         </span>
@@ -162,17 +162,15 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const shownDays = days.filter((d) => !hideEmpty || dayHas(d) || toISODate(d) === today);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#fff", background: t.accent, borderRadius: 7, padding: "3px 10px" }}>
-          KW {isoWeek(toISODate(ws))}
-        </span>
-        {emptyCount > 0 && (
+      {/* KW steht bereits im Navigations-Titel oben – hier nur der Filter-Umschalter. */}
+      {emptyCount > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button onClick={() => setHideEmpty((v) => !v)} style={{
             background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
             fontSize: 12.5, fontWeight: 700, color: t.accent,
           }}>{hideEmpty ? "Leere Tage anzeigen" : `Leere Tage ausblenden (${emptyCount})`}</button>
-        )}
-      </div>
+        </div>
+      )}
       {shownDays.map((d) => {
         const iso = toISODate(d);
         const items = occ.filter((e) => e.date === iso);
