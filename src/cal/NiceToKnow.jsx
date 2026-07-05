@@ -30,7 +30,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   const [editId, setEditId] = useState(null);
   const [fRubrik, setFRubrik] = useState("all");
   const [sort, setSort] = useState("new");
-  const sel = inputStyle(t);
+  const sel = inputStyle(t, true);
   const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
 
   // Reihenfolge der Rubriken für die Sortierung "Nach Rubrik"
@@ -65,16 +65,16 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
       </p>
 
       {/* Eingabe */}
-      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: t.text }}>{editId ? "Notiz bearbeiten" : "Neue Notiz"}</div>
-        <Field t={t} label="Überschrift">
+      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+        <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: t.text }}>{editId ? "Notiz bearbeiten" : "Neue Notiz"}</div>
+        <Field t={t} dense label="Überschrift">
           <input style={sel} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. WLAN-Passwort" />
         </Field>
-        <Field t={t} label="Notiz">
-          <textarea style={{ ...sel, minHeight: 90, resize: "vertical" }} value={text} onChange={(e) => setText(e.target.value)}
+        <Field t={t} dense label="Notiz">
+          <textarea style={{ ...sel, minHeight: 54, resize: "vertical" }} value={text} onChange={(e) => setText(e.target.value)}
             placeholder="Was möchtest du dir merken?" />
         </Field>
-        <Field t={t} label="Rubrik (optional)">
+        <Field t={t} dense label="Rubrik (optional)">
           <select style={sel} value={rubrik} onChange={(e) => setRubrik(e.target.value)}>
             {NTK_RUBRIKEN.map((r) => (
               <option key={r.id || "none"} value={r.id}>{r.icon ? `${r.icon} ` : ""}{r.name}</option>

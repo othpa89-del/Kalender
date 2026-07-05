@@ -9,7 +9,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   const [f, setF] = useState(blankTask(ctx));
   const [editId, setEditId] = useState(null);
   const [filter, setFilter] = useState("open"); // open | done | all
-  const sel = inputStyle(t);
+  const sel = inputStyle(t, true);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
   function save() {
@@ -32,36 +32,37 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   return (
     <div>
       {/* Editor */}
-      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
-        <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: t.text }}>{editId ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</div>
-        <Field t={t} label="Titel" required>
+      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+        <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: t.text }}>{editId ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</div>
+        <Field t={t} dense label="Titel" required>
           <input style={sel} value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="z. B. Hotel buchen" />
         </Field>
-        <Field t={t} label="Beschreibung">
-          <textarea style={{ ...sel, minHeight: 50, resize: "vertical" }} value={f.description} onChange={(e) => set("description", e.target.value)} />
+        <Field t={t} dense label="Beschreibung">
+          <textarea style={{ ...sel, minHeight: 38, resize: "vertical" }} value={f.description} onChange={(e) => set("description", e.target.value)} />
         </Field>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
-            <Field t={t} label="Verantwortlich">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+            <Field t={t} dense label="Verantwortlich">
               <select style={sel} value={f.assigneeId} onChange={(e) => set("assigneeId", e.target.value)}>
                 <option value="">– niemand –</option>
                 {ctx.users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </Field>
           </div>
-          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
-            <Field t={t} label="Priorität">
+          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+            <Field t={t} dense label="Priorität">
               <select style={sel} value={f.priority} onChange={(e) => set("priority", e.target.value)}>
                 <option value="">– keine –</option>
                 {PRIORITIES.map((p) => <option key={p.id} value={p.id}>{p.dot} {p.name}</option>)}
               </select>
             </Field>
           </div>
+          <div style={{ flex: "1 1 130px", minWidth: 0 }}>
+            <Field t={t} dense label="Fällig am">
+              <input type="date" style={sel} value={f.due} onChange={(e) => set("due", e.target.value)} />
+            </Field>
+          </div>
         </div>
-        {/* Voll­breit, damit das iOS-Datumsfeld nie über den Rand steht */}
-        <Field t={t} label="Fällig am">
-          <input type="date" style={sel} value={f.due} onChange={(e) => set("due", e.target.value)} />
-        </Field>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           {editId && <Btn t={t} kind="ghost" onClick={() => { setF(blankTask(ctx)); setEditId(null); }}>Abbrechen</Btn>}
           <Btn t={t} kind="primary" onClick={save}>{editId ? "Speichern" : "Hinzufügen"}</Btn>

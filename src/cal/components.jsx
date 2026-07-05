@@ -40,10 +40,10 @@ export function Modal({ t, title, onClose, children, footer, wide }) {
 }
 
 // --- Formularfeld ------------------------------------------------------
-export function Field({ t, label, children, required, hint }) {
+export function Field({ t, label, children, required, hint, dense }) {
   return (
-    <label style={{ display: "block", marginBottom: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: t.muted, marginBottom: 5 }}>
+    <label style={{ display: "block", marginBottom: dense ? 8 : 12 }}>
+      <div style={{ fontSize: dense ? 11.5 : 12, fontWeight: 700, color: t.muted, marginBottom: dense ? 3 : 5 }}>
         {label}{required && <span style={{ color: "#E53935" }}> *</span>}
       </div>
       {children}
@@ -52,10 +52,11 @@ export function Field({ t, label, children, required, hint }) {
   );
 }
 
-export function inputStyle(t) {
+// dense = kompaktere Höhe (weniger Padding). Schrift bleibt 16px -> iOS zoomt nicht.
+export function inputStyle(t, dense) {
   return {
     width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box",
-    padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 9,
+    padding: dense ? "8px 11px" : "10px 12px", border: `1px solid ${t.border}`, borderRadius: 9,
     fontSize: 16, fontFamily: "inherit", background: t.input, color: t.text, outline: "none",
   };
 }
