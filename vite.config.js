@@ -2,24 +2,15 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { readFileSync } from "fs";
-import { execSync } from "child_process";
 
-// App-Version aus package.json (wird in der Fußzeile angezeigt – nur Major.Minor, z. B. 1.1).
+// App-Version aus package.json (volle Version, z. B. 1.0.0) – wird in der
+// Fußzeile angezeigt. Bei jedem Release die letzte Stelle hochzählen.
 const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url)));
-const shortVersion = pkg.version.split(".").slice(0, 2).join(".");
-
-// Build-Nummer: ändert sich bei JEDEM Deploy. In GitHub Actions die fortlaufende
-// Run-Nummer, sonst der kurze Git-Commit; lokal ersatzweise "dev".
-let buildId = process.env.GITHUB_RUN_NUMBER || "";
-if (!buildId) {
-  try { buildId = execSync("git rev-parse --short HEAD").toString().trim(); } catch { buildId = "dev"; }
-}
 
 // base wird im GitHub-Workflow automatisch auf /<repo-name>/ gesetzt (--base).
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(shortVersion),
-    __BUILD_ID__: JSON.stringify(String(buildId)),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
     react(),

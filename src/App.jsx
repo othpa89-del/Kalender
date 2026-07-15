@@ -670,7 +670,7 @@ export default function App() {
         <div className="app-copyright" style={{
           marginTop: 24, paddingTop: 10, borderTop: `1px solid ${t.borderSoft}`,
           textAlign: "center", fontSize: 10.5, color: t.faint, fontWeight: 600, letterSpacing: ".02em",
-        }}>© Copyright by Patrick Thorn · v{__APP_VERSION__}.{__BUILD_ID__}</div>
+        }}>© Copyright by Patrick Thorn · v{__APP_VERSION__}</div>
       </main>
 
       {/* Versteckter Datei-Input für „Backup wiederherstellen" */}
