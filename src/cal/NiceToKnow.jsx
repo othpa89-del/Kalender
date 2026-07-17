@@ -55,7 +55,12 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
     reset();
   }
   function edit(x) { setTitle(x.title || ""); setText(x.text || ""); setRubrik(x.rubrik || ""); setEditId(x.id); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  function remove(id) { setItems(items.filter((x) => x.id !== id)); if (editId === id) reset(); }
+  function remove(id) {
+    const x = items.find((i) => i.id === id);
+    if (x && ctx.deleteWithUndo) ctx.deleteWithUndo("note", x);
+    else setItems(items.filter((y) => y.id !== id));
+    if (editId === id) reset();
+  }
 
   return (
     <div>

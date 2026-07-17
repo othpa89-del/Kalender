@@ -189,7 +189,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
           }}>{manageLists ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {lists.slice().sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase(), "de")).map((l) => (manageLists ? (
+          {lists.slice().sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase(), "de")).map((l) => { const cnt = items.filter((x) => !x.done && itemListId(x) === l.id).length; return (manageLists ? (
             renId === l.id ? (
               <span key={l.id} style={{ display: "inline-flex", gap: 4 }}>
                 <input autoFocus value={renText} onChange={(e) => setRenText(e.target.value)}
@@ -212,11 +212,19 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
             )
           ) : (
             <button key={l.id} onClick={() => setActiveList(l.id)} style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
               background: l.id === activeId ? t.accent : t.chip, color: l.id === activeId ? "#fff" : t.text,
               border: `1px solid ${l.id === activeId ? t.accent : t.borderSoft}`, borderRadius: 18,
-              padding: "6px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
-            }}>{l.name}</button>
-          )))}
+              padding: "6px 12px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+            }}>
+              {l.name}
+              {cnt > 0 && <span style={{
+                fontSize: 11, fontWeight: 800, lineHeight: 1, minWidth: 17, textAlign: "center",
+                background: l.id === activeId ? "rgba(255,255,255,.28)" : t.accent, color: "#fff",
+                borderRadius: 9, padding: "2px 5px",
+              }}>{cnt}</span>}
+            </button>
+          )); })}
           {lists.length === 0 && <span style={{ fontSize: 12.5, color: t.faint }}>Keine Liste – über „Verwalten" anlegen.</span>}
         </div>
         {manageLists && (

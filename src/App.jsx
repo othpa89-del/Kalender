@@ -102,6 +102,8 @@ export default function App() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  const [undo, setUndo] = useState(null); // { msg, fn } – „Rückgängig" nach Löschen
+  const undoTimer = useRef(null);
   // letzter persistierter Stand (für Diff-Persistenz pro Element)
   const eventsRef = useRef([]);
   const tasksRef = useRef([]);
@@ -124,6 +126,17 @@ export default function App() {
     setToast({ msg, kind });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  // „Rückgängig"-Hinweis (5 Sek.) nach dem Löschen anzeigen.
+  const showUndo = useCallback((msg, fn) => {
+    setUndo({ msg, fn });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 5000);
+  }, []);
+  const doUndo = useCallback(() => {
+    setUndo((u) => { if (u && u.fn) u.fn(); return null; });
+    clearTimeout(undoTimer.current);
   }, []);
 
   // ---------- Benachrichtigung bei neuen Einträgen (In-App, App offen) ----------
@@ -290,6 +303,23 @@ export default function App() {
     settings: (next) => { setSettings(next); saveJSON(K_SETTINGS, next); },
   };
 
+  // ---------- Löschen mit „Rückgängig" ----------
+  // Entfernt ein Element und bietet 5 Sek. lang Wiederherstellung an. Nutzt die
+  // Refs (immer aktueller Stand), damit auch zwischenzeitliche Änderungen erhalten bleiben.
+  const DEL_KINDS = {
+    event:    [eventsRef, persist.events, "Termin"],
+    task:     [tasksRef, persist.tasks, "Aufgabe"],
+    note:     [notesRef, persist.notes, "Notiz"],
+    gossip:   [gossipRef, persist.gossip, "Gossip-Eintrag"],
+    shopping: [shoppingRef, persist.shopping, "Artikel"],
+  };
+  function deleteWithUndo(kind, item) {
+    const entry = DEL_KINDS[kind]; if (!entry || !item) return;
+    const [ref, setter, name] = entry;
+    setter(ref.current.filter((x) => x.id !== item.id));
+    showUndo(`${name} gelöscht`, () => { if (!ref.current.some((x) => x.id === item.id)) setter([...ref.current, item]); });
+  }
+
   // ---------- Lookups ----------
   const typeById = useCallback((id) => types.find((x) => x.id === id), [types]);
   const areaById = useCallback((id) => areas.find((x) => x.id === id), [areas]);
@@ -308,7 +338,7 @@ export default function App() {
     users, areas, types, events,
     activeUserId: settings.activeUserId,
     quickTemplates: QUICK_TEMPLATES,
-    typeById, areaById, userById, flash,
+    typeById, areaById, userById, flash, deleteWithUndo,
     setUsers: persist.users, setAreas: persist.areas, setTypes: persist.types,
   };
 
@@ -398,9 +428,8 @@ export default function App() {
   }
   function deleteEvent(ev) { setConfirmDel(ev); }
   function reallyDelete() {
-    persist.events(events.filter((x) => x.id !== confirmDel.id));
+    deleteWithUndo("event", confirmDel);
     setConfirmDel(null); setEditor(null);
-    flash("Termin gelöscht.");
   }
 
   function changeView(v) { setView(v); setMenuOpen(false); }
@@ -707,6 +736,24 @@ export default function App() {
       )}
 
       <Toast t={t} toast={toast} />
+
+      {/* „Rückgängig" nach dem Löschen */}
+      {undo && (
+        <div style={{
+          position: "fixed", left: "50%", transform: "translateX(-50%)",
+          bottom: "calc(84px + env(safe-area-inset-bottom))", zIndex: 440,
+          background: t.navy, color: "#fff", borderRadius: 12, padding: "9px 10px 9px 16px",
+          display: "flex", alignItems: "center", gap: 14, maxWidth: "92vw",
+          boxShadow: "0 10px 30px rgba(0,0,0,.4)",
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>{undo.msg}</span>
+          <button onClick={doUndo} style={{
+            background: "rgba(255,255,255,.18)", color: "#fff", border: "none", borderRadius: 8,
+            padding: "6px 12px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+          }}>Rückgängig</button>
+        </div>
+      )}
+
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 110 }} />}
     </div>
   );

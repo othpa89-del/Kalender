@@ -23,7 +23,12 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   }
   function edit(x) { setF({ ...x }); setEditId(x.id); }
   function toggle(id) { setTasks(tasks.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
-  function remove(id) { setTasks(tasks.filter((x) => x.id !== id)); if (editId === id) { setF(blankTask(ctx)); setEditId(null); } }
+  function remove(id) {
+    const x = tasks.find((t) => t.id === id);
+    if (x && ctx.deleteWithUndo) ctx.deleteWithUndo("task", x);
+    else setTasks(tasks.filter((y) => y.id !== id));
+    if (editId === id) { setF(blankTask(ctx)); setEditId(null); }
+  }
 
   const visible = tasks
     .filter((x) => filter === "all" ? true : filter === "done" ? x.done : !x.done)
