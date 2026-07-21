@@ -223,6 +223,7 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 //  Tippen auf Balken: Termin öffnen. Tippen auf Tageszahl: Tagesansicht.
 // ---------------------------------------------------------------------
 const MONTH_MAX_LANES = 4;
+const ALLDAY_COLOR = "#2FA36B"; // Ganztägig/mehrtägig = Grün (hebt sich vom Blau ab)
 
 export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const cur = parseISODate(dateISO);
@@ -313,7 +314,9 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
             {/* Balken */}
             <div className="cal-bars" style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
               {placed.map((p, i) => {
-                const bg = t.accent; // einheitliche Balkenfarbe (kein Farbwechsel je Bereich)
+                // Ganztägige & mehrtägige Termine grün, Termine mit Uhrzeit blau.
+                const isAllDay = p.ev.allDay || p.span > 1;
+                const bg = isAllDay ? ALLDAY_COLOR : t.accent;
                 const type = ctx.typeById(p.ev.typeId);
                 // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
                 const icon = p.ev.icon || (type && type.icon) || "📌";
@@ -341,6 +344,14 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
         );
       })}
       <div style={{ marginTop: 8, fontSize: 11, color: t.faint, textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 4, flexWrap: "wrap" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: ALLDAY_COLOR, display: "inline-block" }} />Ganztägig
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: t.accent, display: "inline-block" }} />mit Uhrzeit
+          </span>
+        </div>
         Balken antippen = Termin · Tageszahl antippen = Tagesansicht
       </div>
     </div>
