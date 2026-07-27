@@ -38,6 +38,10 @@ async function saveJSON(key, val) {
 }
 
 // Sammlung (Termine/Aufgaben) aus den Einzelzeilen laden.
+// Bei einem Fehler (Netz/Server) wird NULL geliefert – das unterscheidet
+// „konnte nicht laden" von „ist wirklich leer". Sonst würde eine kurze Störung
+// die Ansicht leeren, Standarddaten neu aussäen und beim nächsten Sync für
+// jeden vorhandenen Eintrag eine „neu"-Benachrichtigung auslösen.
 async function loadCollection(prefix) {
   try {
     const r = await window.storage.getAll(prefix);
@@ -46,7 +50,7 @@ async function loadCollection(prefix) {
       try { const o = JSON.parse(it.value); if (o && o.id) out.push(o); } catch {}
     }
     return out;
-  } catch { return []; }
+  } catch { return null; }
 }
 
 // Diff-Persistenz: nur geänderte/neue Elemente schreiben, entfernte löschen.
@@ -102,8 +106,9 @@ export default function App() {
   const [confirmDel, setConfirmDel] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
-  const [undo, setUndo] = useState(null); // { msg, fn } – „Rückgängig" nach Löschen
+  const [undo, setUndo] = useState(null); // { msg } – „Rückgängig" nach Löschen
   const undoTimer = useRef(null);
+  const undoFnRef = useRef(null);         // Wiederherstellung (außerhalb des Renders aufgerufen)
   // letzter persistierter Stand (für Diff-Persistenz pro Element)
   const eventsRef = useRef([]);
   const tasksRef = useRef([]);
@@ -130,13 +135,19 @@ export default function App() {
 
   // „Rückgängig"-Hinweis (5 Sek.) nach dem Löschen anzeigen.
   const showUndo = useCallback((msg, fn) => {
-    setUndo({ msg, fn });
+    undoFnRef.current = fn;
+    setUndo({ msg });
     clearTimeout(undoTimer.current);
-    undoTimer.current = setTimeout(() => setUndo(null), 5000);
+    undoTimer.current = setTimeout(() => { undoFnRef.current = null; setUndo(null); }, 5000);
   }, []);
+  // Wichtig: die Wiederherstellung NICHT im State-Updater aufrufen – React ruft
+  // Updater in StrictMode doppelt auf, was den Schreibvorgang verdoppeln würde.
   const doUndo = useCallback(() => {
-    setUndo((u) => { if (u && u.fn) u.fn(); return null; });
     clearTimeout(undoTimer.current);
+    const fn = undoFnRef.current;
+    undoFnRef.current = null;
+    setUndo(null);
+    if (fn) fn();
   }, []);
 
   // ---------- Benachrichtigung bei neuen Einträgen (In-App, App offen) ----------
@@ -180,6 +191,14 @@ export default function App() {
       const go = await loadCollection(P_GOSSIP);
       let fv = await loadCollection(P_SHOPFAV);
       let stores = await loadCollection(P_SHOPSTORE);
+      // Konnte etwas NICHT geladen werden (null), brechen wir ab: lieber den
+      // Ladehinweis stehen lassen als leere Listen zeigen und Standarddaten neu
+      // aussäen. Ein Tipp auf 🔄 lädt erneut.
+      if ([ev, tk, sh, nt, go, fv, stores].some((x) => x === null)) {
+        if (!on) return;
+        flash("Daten konnten nicht geladen werden. Bitte 🔄 neu laden.", "error");
+        return;
+      }
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
       if (ev.length === 0) {
         const legacy = await loadJSON(K_EVENTS_LEGACY, []);
@@ -266,6 +285,9 @@ export default function App() {
       const go = await loadCollection(P_GOSSIP);
       const fv = await loadCollection(P_SHOPFAV);
       const stores = await loadCollection(P_SHOPSTORE);
+      // Bei einem Ladefehler (null) nichts übernehmen – sonst würden die Listen
+      // geleert und beim nächsten Sync alles als „neu" gemeldet.
+      if ([ev, tk, sh, nt, go, fv, stores].some((x) => x === null)) return;
       if (u && u.length) setUsers(u);
       if (a && a.length) setAreas(a);
       if (ty && ty.length) setTypes(ty);
@@ -339,6 +361,7 @@ export default function App() {
     activeUserId: settings.activeUserId,
     quickTemplates: QUICK_TEMPLATES,
     typeById, areaById, userById, flash, deleteWithUndo,
+    setActiveUserId: (id) => persist.settings({ ...settings, activeUserId: id }),
     setUsers: persist.users, setAreas: persist.areas, setTypes: persist.types,
   };
 

@@ -76,7 +76,9 @@ window.storage = {
     if (!currentUserId) return { items: [] };
     let q = supabase.from("kv").select("key,value").eq("user_id", currentUserId);
     if (prefix) q = q.like("key", `${prefix}%`);
-    const { data, error } = await q;
+    // Nach key sortieren: ohne ORDER BY ist die Zeilenreihenfolge nicht garantiert
+    // und würde sich je Gerät/Neuladen unterscheiden.
+    const { data, error } = await q.order("key", { ascending: true });
     if (error) throw error;
     return { items: (data || []).map((r) => ({ key: r.key, value: r.value })) };
   },

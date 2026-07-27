@@ -29,7 +29,18 @@ export function Admin({ t, ctx, onClose }) {
 // --- Benutzer ----------------------------------------------------------
 function UsersAdmin({ t, ctx, sel }) {
   const [newName, setNewName] = useState("");
-  function update(id, patch) { ctx.setUsers(ctx.users.map((u) => (u.id === id ? { ...u, ...patch } : u))); }
+  function update(id, patch) {
+    // Es muss immer mindestens ein Administrator übrig bleiben – sonst wäre die
+    // Verwaltung dauerhaft nicht mehr erreichbar (⚙️ nur für Admins sichtbar).
+    if (patch.role && patch.role !== "admin") {
+      const admins = ctx.users.filter((u) => u.role === "admin");
+      if (admins.length <= 1 && admins.some((u) => u.id === id)) {
+        ctx.flash("Es muss mindestens ein Administrator bleiben.", "warn");
+        return;
+      }
+    }
+    ctx.setUsers(ctx.users.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  }
   function add() {
     if (!newName.trim()) return;
     ctx.setUsers([...ctx.users, { id: uid("u"), name: newName.trim(), role: "user", color: "#42A5F5", avatar: "" }]);
@@ -37,7 +48,16 @@ function UsersAdmin({ t, ctx, sel }) {
   }
   function remove(id) {
     if (ctx.users.length <= 1) { ctx.flash("Mindestens ein Benutzer ist erforderlich.", "warn"); return; }
-    ctx.setUsers(ctx.users.filter((u) => u.id !== id));
+    const admins = ctx.users.filter((u) => u.role === "admin");
+    if (admins.length <= 1 && admins.some((u) => u.id === id)) {
+      ctx.flash("Der letzte Administrator kann nicht gelöscht werden.", "warn"); return;
+    }
+    const rest = ctx.users.filter((u) => u.id !== id);
+    ctx.setUsers(rest);
+    // War der gelöschte Benutzer der aktive, auf einen vorhandenen umstellen –
+    // sonst zeigt die Auswahl oben einen anderen Namen an, während neue Einträge
+    // weiter auf die gelöschte (nicht mehr auflösbare) ID geschrieben würden.
+    if (ctx.activeUserId === id && ctx.setActiveUserId) ctx.setActiveUserId(rest[0].id);
   }
   return (
     <div>
@@ -48,7 +68,6 @@ function UsersAdmin({ t, ctx, sel }) {
             <input type="color" value={u.color} onChange={(e) => update(u.id, { color: e.target.value })} style={colorInp} />
             <input value={u.name} onChange={(e) => update(u.id, { name: e.target.value })} style={{ ...sel, flex: "1 1 120px", minWidth: 0 }} />
             <select value={u.role} onChange={(e) => update(u.id, { role: e.target.value })} style={{ ...sel, flex: "1 1 130px", minWidth: 0 }}>
-              <option value="">– bitte wählen –</option>
               <option value="admin">Administrator</option>
               <option value="user">Benutzer</option>
             </select>

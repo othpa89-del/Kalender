@@ -1,7 +1,7 @@
 // ===========================================================================
 //  EventEditor.jsx – Termin erstellen / bearbeiten / ansehen
 // ===========================================================================
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   PRIORITIES, RECUR_FREQS, REMINDER_OPTIONS, WEEKDAYS,
   findConflicts, googleMapsLink, appleMapsLink, googleCalendarLink, uid,
@@ -24,7 +24,12 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   const conflicts = useMemo(() => {
     if (!f.date || !f.start || !f.end) return [];
     return findConflicts(f, ctx.events);
-  }, [f.date, f.start, f.end, f.id, ctx.events]);
+  }, [f.date, f.start, f.end, f.allDay, f.id, ctx.events]);
+
+  // Eine einmal bestätigte Überschneidung gilt nur für GENAU diese Zeit. Ändert
+  // sich Datum/Uhrzeit, muss erneut bestätigt werden (sonst würde ein späterer,
+  // anderer Konflikt ohne Warnung gespeichert).
+  useEffect(() => { setConfirmConflict(false); }, [f.date, f.start, f.end, f.allDay]);
 
   const rec = f.recurrence || { freq: "none" };
   const readOnly = !canEdit;
@@ -77,7 +82,16 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
     const next = [...(f.attachments || [])];
     for (const file of files) {
       if (file.size > MAX_FILE) { ctx.flash(`„${file.name}" ist größer als 800 KB und wurde übersprungen.`, "warn"); continue; }
-      const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+      // onerror/onabort MÜSSEN behandelt werden: sonst wird das Promise nie
+      // aufgelöst, die Schleife hängt und auch bereits gelesene Dateien gehen verloren.
+      const dataUrl = await new Promise((res) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => res(null);
+        r.onabort = () => res(null);
+        try { r.readAsDataURL(file); } catch { res(null); }
+      });
+      if (!dataUrl) { ctx.flash(`„${file.name}" konnte nicht gelesen werden.`, "warn"); continue; }
       next.push({ id: uid("att"), kind: "file", name: file.name, mime: file.type, dataUrl });
     }
     set("attachments", next);

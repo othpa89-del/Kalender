@@ -248,6 +248,12 @@ export function expandOccurrences(ev, rangeStartISO, rangeEndISO) {
     const wds = (rec.weekdays && rec.weekdays.length) ? rec.weekdays.slice().sort() : [(base.getDay() + 6) % 7];
     // Anker: Wochenstart der Basiswoche
     let weekStart = startOfWeek(base);
+    // Vorspulen bis kurz vor den Zeitraum (sonst läuft die Schleife bei alten
+    // Startdaten in die Obergrenze und der Termin verschwindet).
+    if (!maxCount) {
+      const weeksDiff = Math.floor((startOfWeek(rs) - weekStart) / (7 * 86400000));
+      if (weeksDiff > 0) weekStart = addDays(weekStart, 7 * interval * Math.floor(weeksDiff / interval));
+    }
     let safety = 0;
     while (safety++ < HARD_LIMIT) {
       for (const wd of wds) {
@@ -269,6 +275,26 @@ export function expandOccurrences(ev, rangeStartISO, rangeEndISO) {
   let unit = rec.freq === "custom" ? (rec.unit || "day") : (FREQ_UNIT[rec.freq] || "day");
 
   let d = new Date(base);
+  // Vorspulen bis kurz vor den Zeitraum: sonst zählt die Schleife bei lange
+  // zurückliegenden Startdaten Tag für Tag hoch und bricht an der Obergrenze ab
+  // (der Termin würde ab ca. 2,7 Jahren nach Start unsichtbar). Bei count-
+  // begrenzten Wiederholungen wird nicht gesprungen, damit produced stimmt.
+  if (!maxCount && d < rs) {
+    let steps = 0;
+    if (unit === "day") steps = Math.floor((rs - d) / 86400000 / interval);
+    else if (unit === "week") steps = Math.floor((rs - d) / (7 * 86400000) / interval);
+    else if (unit === "month" || unit === "year") {
+      const perStep = (unit === "year" ? 12 : 1) * interval;
+      const months = (rs.getFullYear() - d.getFullYear()) * 12 + (rs.getMonth() - d.getMonth());
+      steps = Math.floor(months / perStep);
+    }
+    if (steps > 0) {
+      if (unit === "day") d = addDays(d, steps * interval);
+      else if (unit === "week") d = addDays(d, steps * 7 * interval);
+      else if (unit === "month") d = addMonths(d, steps * interval);
+      else if (unit === "year") d = addMonths(d, steps * 12 * interval);
+    }
+  }
   let safety = 0;
   while (safety++ < HARD_LIMIT) {
     produced += 1;
@@ -320,6 +346,9 @@ export function occurrencesInRange(events, rangeStartISO, rangeEndISO) {
         if (d < rs || d > re) continue;
         out.push({
           ...ev, date: toISODate(d), _occ: true, _baseDate: ev.date,
+          // Startdatum DIESES Vorkommens: unterscheidet die einzelnen
+          // Wiederholungen desselben Termins (sonst verschmelzen sie).
+          _occStart: startISO,
           _span: span, _spanStart: i === 0, _spanEnd: i === span - 1,
         });
       }
@@ -332,7 +361,14 @@ export function occurrencesInRange(events, rangeStartISO, rangeEndISO) {
 // =====================================================================
 //  Konflikterkennung – Überschneidungen am selben Tag
 // =====================================================================
+// Ganztägige Termine belegen keinen konkreten Zeitraum – sie dürfen daher nie
+// als Überschneidung gelten (sonst kollidiert z. B. „Urlaub" mit allem).
+function blocksTime(ev) {
+  return !!ev && !ev.allDay;
+}
+
 export function findConflicts(candidate, events) {
+  if (!blocksTime(candidate)) return [];
   const cs = timeToMin(candidate.start);
   const ce = timeToMin(candidate.end);
   if (ce <= cs) return [];
@@ -342,6 +378,7 @@ export function findConflicts(candidate, events) {
   const re = toISODate(addDays(parseISODate(candidate.date), 1));
   for (const ev of events) {
     if (ev.id === candidate.id) continue;
+    if (!blocksTime(ev)) continue;
     const dates = expandOccurrences(ev, rs, re);
     if (!dates.includes(candidate.date)) continue;
     const es = timeToMin(ev.start), ee = timeToMin(ev.end);
@@ -354,10 +391,11 @@ export function findConflicts(candidate, events) {
 // Liste zeitlich überschneiden (gleiche Liste = gleicher Tag erwartet).
 export function dayConflictSet(items) {
   const set = new Set();
-  for (let i = 0; i < items.length; i++) {
-    const a = items[i], as = timeToMin(a.start), ae = Math.max(timeToMin(a.end), as + 1);
-    for (let j = i + 1; j < items.length; j++) {
-      const b = items[j], bs = timeToMin(b.start), be = Math.max(timeToMin(b.end), bs + 1);
+  const timed = items.filter(blocksTime);
+  for (let i = 0; i < timed.length; i++) {
+    const a = timed[i], as = timeToMin(a.start), ae = Math.max(timeToMin(a.end), as + 1);
+    for (let j = i + 1; j < timed.length; j++) {
+      const b = timed[j], bs = timeToMin(b.start), be = Math.max(timeToMin(b.end), bs + 1);
       if (as < be && bs < ae) { set.add(a.id); set.add(b.id); }
     }
   }
@@ -374,10 +412,23 @@ export function appleMapsLink(addr) {
   return `https://maps.apple.com/?q=${encodeURIComponent(addr)}`;
 }
 export function googleCalendarLink(ev) {
-  const d = ev.date.replace(/-/g, "");
-  const s = (ev.start || "00:00").replace(":", "") + "00";
-  const e = (ev.end || ev.start || "00:00").replace(":", "") + "00";
-  const dates = `${d}T${s}/${d}T${e}`;
+  const startD = ev.date.replace(/-/g, "");
+  // Enddatum berücksichtigen (mehrtägige Termine), sonst Starttag.
+  const lastDayISO = (ev.endDate && ev.endDate > ev.date) ? ev.endDate : ev.date;
+  const endD = lastDayISO.replace(/-/g, "");
+  let dates;
+  if (ev.allDay) {
+    // Ganztägig: reines Datumsformat, Ende ist EXKLUSIV -> +1 Tag.
+    const endExcl = toISODate(addDays(parseISODate(lastDayISO), 1)).replace(/-/g, "");
+    dates = `${startD}/${endExcl}`;
+  } else {
+    const s = (ev.start || "00:00").replace(":", "") + "00";
+    // Ohne Endzeit eine Stunde annehmen (Google lehnt Null-Dauer ab).
+    const endMin = ev.end ? timeToMin(ev.end) : timeToMin(ev.start || "00:00") + 60;
+    const eh = String(Math.floor(Math.min(endMin, 23 * 60 + 59) / 60)).padStart(2, "0");
+    const em = String(Math.min(endMin, 23 * 60 + 59) % 60).padStart(2, "0");
+    dates = `${startD}T${s}/${endD}T${eh}${em}00`;
+  }
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: ev.title || "Termin",
@@ -399,6 +450,23 @@ function icsDate(dateISO, time) {
 function icsEscape(s) {
   return String(s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 }
+// Reines Datum (für ganztägige Termine: DTSTART;VALUE=DATE)
+function icsDay(dateISO) { return dateISO.replace(/-/g, ""); }
+// RFC 5545: Zeilen dürfen max. 75 Oktette lang sein – längere werden gefaltet
+// (Folgezeilen beginnen mit einem Leerzeichen). Umlaute zählen als 2 Oktette.
+function icsFold(line) {
+  const enc = new TextEncoder();
+  if (enc.encode(line).length <= 75) return line;
+  const out = [];
+  let cur = "", curLen = 0, limit = 75;
+  for (const ch of line) {
+    const chLen = enc.encode(ch).length;
+    if (curLen + chLen > limit) { out.push(cur); cur = " " + ch; curLen = 1 + chLen; limit = 75; }
+    else { cur += ch; curLen += chLen; }
+  }
+  if (cur) out.push(cur);
+  return out.join("\r\n");
+}
 function rrule(rec) {
   if (!rec || rec.freq === "none" || !rec.freq) return null;
   const map = { daily: "DAILY", weekly: "WEEKLY", monthly: "MONTHLY", yearly: "YEARLY" };
@@ -419,11 +487,23 @@ export function buildICS(events, typeName, areaName, userName) {
     "X-WR-CALNAME:Kalender – Familie & Business",
     "X-WR-CALDESC:Copyright by Patrick Thorn",
   ];
+  // DTSTAMP ist Pflicht (strenge Parser wie Outlook lehnen VEVENTs ohne ab).
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   for (const ev of events) {
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${ev.id}@kalender-app`);
-    lines.push(`DTSTART:${icsDate(ev.date, ev.start)}`);
-    lines.push(`DTEND:${icsDate(ev.date, ev.end || ev.start)}`);
+    lines.push(`DTSTAMP:${stamp}`);
+    // Letzter Tag des Termins (mehrtägig via endDate).
+    const lastDayISO = (ev.endDate && ev.endDate > ev.date) ? ev.endDate : ev.date;
+    if (ev.allDay) {
+      // Ganztägig: Datumswerte, DTEND ist exklusiv -> letzter Tag + 1.
+      const endExcl = toISODate(addDays(parseISODate(lastDayISO), 1));
+      lines.push(`DTSTART;VALUE=DATE:${icsDay(ev.date)}`);
+      lines.push(`DTEND;VALUE=DATE:${icsDay(endExcl)}`);
+    } else {
+      lines.push(`DTSTART:${icsDate(ev.date, ev.start)}`);
+      lines.push(`DTEND:${icsDate(lastDayISO, ev.end || ev.start)}`);
+    }
     const r = rrule(ev.recurrence);
     if (r) lines.push(`RRULE:${r}`);
     lines.push(`SUMMARY:${icsEscape(ev.title)}`);
@@ -437,7 +517,7 @@ export function buildICS(events, typeName, areaName, userName) {
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");
-  return lines.join("\r\n");
+  return lines.map(icsFold).join("\r\n");
 }
 
 export function downloadFile(filename, content, mime = "text/plain") {

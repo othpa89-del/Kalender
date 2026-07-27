@@ -59,7 +59,10 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   const defaultList = lists.find((l) => (l.name || "").trim().toLowerCase() === "allgemein") || lists[0];
   // aktive Liste absichern (z. B. nach Löschen)
   const activeId = lists.some((l) => l.id === activeList) ? activeList : (defaultList ? defaultList.id : "");
-  const itemListId = (x) => x.list || (lists[0] ? lists[0].id : ""); // Altartikel -> erste Liste
+  // Altartikel ohne Listenzuordnung -> IMMER die Standardliste („Allgemein").
+  // Nicht lists[0] verwenden: die Reihenfolge aus der Cloud ist nicht garantiert,
+  // sonst läge derselbe Artikel je Gerät/Neuladen in einem anderen Geschäft.
+  const itemListId = (x) => x.list || (defaultList ? defaultList.id : "");
   const inActive = (x) => itemListId(x) === activeId;
 
   function addList() {
@@ -71,7 +74,9 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   function removeList(id) {
     if (lists.length <= 1) { if (ctx.flash) ctx.flash("Mindestens eine Liste muss bleiben.", "warn"); return; }
     const remaining = lists.filter((l) => l.id !== id);
-    const fallback = remaining[0].id;
+    // Ziel-Liste deterministisch wählen: bevorzugt „Allgemein", sonst alphabetisch erste.
+    const fallback = (remaining.find((l) => (l.name || "").trim().toLowerCase() === "allgemein")
+      || remaining.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"))[0]).id;
     // Artikel dieser Liste auf die erste verbleibende Liste verschieben (nichts geht verloren)
     if (items.some((x) => itemListId(x) === id)) {
       setItems(items.map((x) => (itemListId(x) === id ? { ...x, list: fallback } : x)));
@@ -138,42 +143,9 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
     cat: c, list: open.filter((x) => itemCat(x).id === c.id).slice().sort(byText),
   })).filter((g) => g.list.length);
 
-  const Item = ({ x }) => {
-    const who = ctx.userById && ctx.userById(x.addedBy);
-    const editing = editId === x.id;
-    return (
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10, background: t.surface,
-        border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px",
-      }}>
-        <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
-          style={{ width: 22, height: 22, accentColor: t.accent, flex: "none", cursor: "pointer" }} />
-        {editing ? (
-          <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
-            onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEdit(); } }}
-            style={{ ...sel, flex: 1, padding: "6px 9px" }} />
-        ) : (
-          <span onClick={() => startEdit(x)} style={{
-            flex: 1, minWidth: 0, fontSize: 16, color: t.text, cursor: "text", wordBreak: "break-word",
-            textDecoration: x.done ? "line-through" : "none", opacity: x.done ? 0.55 : 1,
-          }}>{x.text}</span>
-        )}
-        {who && !editing && <span title={`Hinzugefügt von ${who.name}`} style={{ flex: "none" }}><Dot color={who.color} size={9} /></span>}
-        {editing ? (
-          <button onClick={commitEdit} aria-label="Fertig" style={{
-            background: "none", border: "none", color: t.accent, cursor: "pointer", fontSize: 16, flex: "none", lineHeight: 1, padding: 2,
-          }}>✓</button>
-        ) : (
-          <button onClick={() => startEdit(x)} aria-label="Bearbeiten" style={{
-            background: "none", border: "none", cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1, padding: 2,
-          }}>✏️</button>
-        )}
-        <button onClick={() => remove(x.id)} aria-label="Löschen" style={{
-          background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, flex: "none", lineHeight: 1, padding: 2,
-        }}>×</button>
-      </div>
-    );
-  };
+  // Item ist auf Modulebene definiert (siehe unten) – hier nur die Props bündeln,
+  // damit die Aufrufstellen kurz bleiben.
+  const itemProps = { t, ctx, sel, editId, editText, setEditText, toggle, remove, startEdit, commitEdit };
 
   return (
     <div>
@@ -319,7 +291,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
                 {g.cat.icon} {g.cat.name.toUpperCase()} ({g.list.length})
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {g.list.map((x) => <Item key={x.id} x={x} />)}
+                {g.list.map((x) => <Item key={x.id} x={x} {...itemProps} />)}
               </div>
             </div>
           ))}
@@ -337,13 +309,53 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
               </button>
               {showDone && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                  {done.map((x) => <Item key={x.id} x={x} />)}
+                  {done.map((x) => <Item key={x.id} x={x} {...itemProps} />)}
                 </div>
               )}
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Auf Modulebene definiert (NICHT im Render-Body von Shopping): sonst wäre der
+// Komponententyp bei jedem Rendern neu, React würde die Zeile samt Eingabefeld
+// neu aufbauen und der Cursor beim Bearbeiten nach jedem Zeichen ans Ende springen.
+function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, startEdit, commitEdit }) {
+  const who = ctx.userById && ctx.userById(x.addedBy);
+  const editing = editId === x.id;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 10, background: t.surface,
+      border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px",
+    }}>
+      <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
+        style={{ width: 22, height: 22, accentColor: t.accent, flex: "none", cursor: "pointer" }} />
+      {editing ? (
+        <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
+          onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEdit(); } }}
+          style={{ ...sel, flex: 1, padding: "6px 9px" }} />
+      ) : (
+        <span onClick={() => startEdit(x)} style={{
+          flex: 1, minWidth: 0, fontSize: 16, color: t.text, cursor: "text", wordBreak: "break-word",
+          textDecoration: x.done ? "line-through" : "none", opacity: x.done ? 0.55 : 1,
+        }}>{x.text}</span>
+      )}
+      {who && !editing && <span title={`Hinzugefügt von ${who.name}`} style={{ flex: "none" }}><Dot color={who.color} size={9} /></span>}
+      {editing ? (
+        <button onClick={commitEdit} aria-label="Fertig" style={{
+          background: "none", border: "none", color: t.accent, cursor: "pointer", fontSize: 16, flex: "none", lineHeight: 1, padding: 2,
+        }}>✓</button>
+      ) : (
+        <button onClick={() => startEdit(x)} aria-label="Bearbeiten" style={{
+          background: "none", border: "none", cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1, padding: 2,
+        }}>✏️</button>
+      )}
+      <button onClick={() => remove(x.id)} aria-label="Löschen" style={{
+        background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, flex: "none", lineHeight: 1, padding: 2,
+      }}>×</button>
     </div>
   );
 }

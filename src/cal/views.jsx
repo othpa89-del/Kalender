@@ -39,8 +39,10 @@ function layoutDay(items) {
       cols.push({ ev, lane, s, e });
     }
     const colCount = Math.max(1, lanes.length);
-    const conflict = cluster.length > 1;
-    for (const c of cols) placed.push({ ...c, colCount, conflict });
+    // Ganztägige Termine belegen keine konkrete Zeit -> sie erzeugen keine
+    // Überschneidung. Nur wenn sich mind. 2 Termine MIT Uhrzeit treffen.
+    const conflict = cluster.filter((e) => !e.allDay).length > 1;
+    for (const c of cols) placed.push({ ...c, colCount, conflict: conflict && !c.ev.allDay });
     cluster = []; clusterEnd = -1;
   };
 
@@ -239,9 +241,15 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   function weekBars(weekDays) {
     const isoList = weekDays.map(toISODate);
     const idxOf = {}; isoList.forEach((iso, i) => { idxOf[iso] = i; });
+    // Schlüssel je VORKOMMEN (id + Startdatum des Vorkommens): sonst würden die
+    // Wiederholungen desselben Termins zu einem einzigen breiten Balken
+    // verschmelzen (z. B. ein tägliches Meeting Mo–Fr).
     const perId = {};
     isoList.forEach((iso) => {
-      (byDay[iso] || []).forEach((o) => { (perId[o.id] = perId[o.id] || []).push({ idx: idxOf[iso], o }); });
+      (byDay[iso] || []).forEach((o) => {
+        const key = o.id + "|" + (o._occStart || o.date);
+        (perId[key] = perId[key] || []).push({ idx: idxOf[iso], o });
+      });
     });
     const runs = [];
     Object.values(perId).forEach((arr) => {
@@ -315,7 +323,10 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
             <div className="cal-bars" style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
               {placed.map((p, i) => {
                 // Ganztägige & mehrtägige Termine grün, Termine mit Uhrzeit blau.
-                const isAllDay = p.ev.allDay || p.span > 1;
+                // WICHTIG: die echte Termindauer (_span) verwenden – p.span ist nur
+                // die Länge des Balkens INNERHALB dieser Woche. Sonst bekäme ein
+                // über den Wochenwechsel laufender Termin zwei verschiedene Farben.
+                const isAllDay = p.ev.allDay || (p.ev._span || 1) > 1;
                 const bg = isAllDay ? ALLDAY_COLOR : t.accent;
                 const type = ctx.typeById(p.ev.typeId);
                 // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
@@ -346,7 +357,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
       <div style={{ marginTop: 8, fontSize: 11, color: t.faint, textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 4, flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: ALLDAY_COLOR, display: "inline-block" }} />Ganztägig
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: ALLDAY_COLOR, display: "inline-block" }} />Ganztägig/mehrtägig
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 11, height: 11, borderRadius: 3, background: t.accent, display: "inline-block" }} />mit Uhrzeit
@@ -361,6 +372,26 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 // ---------------------------------------------------------------------
 //  DASHBOARD / STARTSEITE
 // ---------------------------------------------------------------------
+// Auf Modulebene definiert (NICHT im Render-Body): sonst entsteht bei jedem
+// Rendern ein neuer Komponententyp und React baut den Teilbaum komplett neu auf.
+function Section({ t, ctx, onSelect, title, items, empty, badge }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>{title}</h3>
+        {badge != null && <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({badge})</span>}
+      </div>
+      {items.length === 0 ? (
+        <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>{empty}</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {items.map((ev, i) => <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} onClick={() => onSelect(ev)} showDate />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelect, onOpenTab }) {
   const today = todayISO();
   const tomorrow = toISODate(addDays(parseISODate(today), 1));
@@ -393,22 +424,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
     if (r.kind === "event") onSelect(r.item);
     else if (onOpenTab) onOpenTab(r.kind === "task" ? "tasks" : "gossip");
   }
-
-  const Section = ({ title, items, empty, badge }) => (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>{title}</h3>
-        {badge != null && <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({badge})</span>}
-      </div>
-      {items.length === 0 ? (
-        <div style={{ fontSize: 13, color: t.faint, padding: "6px 0" }}>{empty}</div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {items.map((ev, i) => <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} onClick={() => onSelect(ev)} showDate />)}
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div>
@@ -453,8 +468,8 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
         )}
       </div>
 
-      <Section title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
-      <Section title="Morgen" items={tomorrows} empty="Morgen keine Termine." badge={tomorrows.length} />
+      <Section t={t} ctx={ctx} onSelect={onSelect} title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
+      <Section t={t} ctx={ctx} onSelect={onSelect} title="Morgen" items={tomorrows} empty="Morgen keine Termine." badge={tomorrows.length} />
     </div>
   );
 }
