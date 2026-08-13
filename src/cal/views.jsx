@@ -59,6 +59,7 @@ function layoutDay(items) {
 //  TAGESANSICHT
 // ---------------------------------------------------------------------
 export function DayView({ t, ctx, dateISO, occ, onSelect }) {
+  const gridRef = React.useRef(null);
   // Mehrtägige Termine an diesem Tag auf die Tagesgrenzen zuschneiden,
   // damit sie im Stundenraster sinnvoll positioniert werden.
   const dayItems = occ.filter((e) => e.date === dateISO).map((e) =>
@@ -71,6 +72,19 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
   const hasConflict = placed.some((p) => p.conflict);
   const nowMin = todayISO() === dateISO
     ? new Date().getHours() * 60 + new Date().getMinutes() : null;
+
+  // Beim Öffnen dorthin scrollen, wo etwas los ist (erster Termin bzw. „jetzt"),
+  // statt den Nutzer jedes Mal aus der leeren Nacht heraufscrollen zu lassen.
+  React.useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const firstMin = dayItems.length
+      ? Math.min(...dayItems.map((e) => timeToMin(e.start)))
+      : (nowMin != null ? nowMin : 8 * 60);
+    const top = el.offsetTop + Math.max(0, (firstMin / 60) * HOUR - 40);
+    window.scrollTo({ top, behavior: "auto" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateISO]);
 
   return (
     <div>
@@ -88,7 +102,7 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
         )}
       </div>
       {dayItems.length === 0 && <Empty t={t} text="Keine Termine an diesem Tag." />}
-      <div style={{ position: "relative", borderTop: `1px solid ${t.border}` }}>
+      <div ref={gridRef} style={{ position: "relative", borderTop: `1px solid ${t.border}` }}>
         {Array.from({ length: endHour - startHour }).map((_, i) => {
           const h = startHour + i;
           return (

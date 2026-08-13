@@ -6,7 +6,7 @@
 // ===========================================================================
 import React, { useState, useRef } from "react";
 import { uid } from "./data.js";
-import { inputStyle, Btn, Dot } from "./components.jsx";
+import { inputStyle, Btn, Dot, useHighlight } from "./components.jsx";
 
 // Kategorien (alphabetisch). Beim Hinzufügen wählbar; ohne Auswahl wird per
 // Stichwort automatisch einsortiert.
@@ -54,6 +54,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   const [showDone, setShowDone] = useState(false); // erledigte Artikel ein-/ausklappen
   const sel = inputStyle(t);
   const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
+  useHighlight(ctx.highlightId);
 
   // Standardliste beim Öffnen: „Allgemein" (falls vorhanden), sonst die erste.
   const defaultList = lists.find((l) => (l.name || "").trim().toLowerCase() === "allgemein") || lists[0];
@@ -118,9 +119,19 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   }
   function addFromInput() { addItem(text, cat); setText(""); }
   function toggle(id) { setItems(items.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
-  function remove(id) { setItems(items.filter((x) => x.id !== id)); }
+  function remove(id) {
+    const x = items.find((i) => i.id === id);
+    if (x && ctx.deleteWithUndo) ctx.deleteWithUndo("shopping", x);
+    else setItems(items.filter((y) => y.id !== id));
+  }
   function checkAll() { setItems(items.map((x) => (inActive(x) && !x.done ? { ...x, done: true } : x))); }
-  function clearDone() { setItems(items.filter((x) => !(x.done && inActive(x)))); }
+  function clearDone() {
+    const removed = items.filter((x) => x.done && inActive(x));
+    setItems(items.filter((x) => !(x.done && inActive(x))));
+    if (removed.length && ctx.showUndo) {
+      ctx.showUndo(`${removed.length} erledigte entfernt`, () => setItems([...items]));
+    }
+  }
   function clearAll() {
     if (typeof window !== "undefined" && !window.confirm("Diese Liste leeren?")) return;
     setItems(items.filter((x) => !inActive(x)));
@@ -270,10 +281,11 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
 
       {/* Sammel-Aktionen */}
       {(open.length + done.length) > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 14 }}>
           {open.length > 0 && <ActionLink t={t} onClick={checkAll}>✓ Alle abhaken</ActionLink>}
           {done.length > 0 && <ActionLink t={t} onClick={clearDone}>Erledigte entfernen ({done.length})</ActionLink>}
-          <ActionLink t={t} danger onClick={clearAll}>Liste leeren</ActionLink>
+          {/* „Liste leeren" ist destruktiv -> deutlich abgesetzt ganz rechts */}
+          <ActionLink t={t} danger onClick={clearAll} style={{ marginLeft: "auto" }}>Liste leeren</ActionLink>
         </div>
       )}
 
@@ -327,7 +339,7 @@ function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, s
   const who = ctx.userById && ctx.userById(x.addedBy);
   const editing = editId === x.id;
   return (
-    <div style={{
+    <div id={"hl-" + x.id} style={{
       display: "flex", alignItems: "center", gap: 10, background: t.surface,
       border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px",
     }}>
@@ -360,11 +372,13 @@ function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, s
   );
 }
 
-function ActionLink({ t, children, onClick, danger }) {
+function ActionLink({ t, children, onClick, danger, style }) {
   return (
     <button onClick={onClick} style={{
-      background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
-      fontSize: 13, fontWeight: 700, color: danger ? "#E53935" : t.accent,
+      background: danger ? "#E5393514" : t.chip, cursor: "pointer", fontFamily: "inherit",
+      border: `1px solid ${danger ? "#E5393555" : t.borderSoft}`, borderRadius: 9,
+      padding: "0 12px", minHeight: 40, display: "inline-flex", alignItems: "center",
+      fontSize: 13, fontWeight: 700, color: danger ? "#E53935" : t.accent, ...(style || {}),
     }}>{children}</button>
   );
 }

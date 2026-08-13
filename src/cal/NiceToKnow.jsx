@@ -4,7 +4,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import { uid } from "./data.js";
-import { Field, inputStyle, Btn, Dot } from "./components.jsx";
+import { Field, inputStyle, Btn, Dot, useHighlight } from "./components.jsx";
 
 // Rubriken: alphabetisch, Leer-Option immer ganz oben.
 export const NTK_RUBRIKEN = [
@@ -32,6 +32,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   const [sort, setSort] = useState("new");
   const sel = inputStyle(t, true);
   const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
+  useHighlight(ctx.highlightId);
 
   // Reihenfolge der Rubriken für die Sortierung "Nach Rubrik"
   const rubrikOrder = (id) => { const i = NTK_RUBRIKEN.findIndex((r) => r.id === (id || "")); return i < 0 ? 99 : i; };
@@ -130,7 +131,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
             const r = rubrikById(x.rubrik);
             const who = ctx.userById && ctx.userById(x.addedBy);
             return (
-              <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px" }}>
+              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {x.title && <div style={{ fontWeight: 700, fontSize: 14, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}
@@ -146,7 +147,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: 4, flex: "none" }}>
+                  <div style={{ display: "flex", gap: 12, flex: "none" }}>
                     <button onClick={() => edit(x)} title="Bearbeiten" style={iconBtn}>✏️</button>
                     <button onClick={() => remove(x.id)} title="Löschen" style={iconBtn}>🗑️</button>
                   </div>
@@ -160,4 +161,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   );
 }
 
-const iconBtn = { background: "none", border: "none", cursor: "pointer", fontSize: 15, padding: 3, borderRadius: 6, lineHeight: 1 };
+const iconBtn = {
+  background: "none", border: "none", cursor: "pointer", fontSize: 17, borderRadius: 8, lineHeight: 1,
+  minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+};

@@ -4,7 +4,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import { uid } from "./data.js";
-import { Field, inputStyle, Btn, Dot } from "./components.jsx";
+import { Field, inputStyle, Btn, Dot, useHighlight } from "./components.jsx";
 
 // Level = bewusste Steigerung (keine Alphabet-Sortierung); Leer-Option oben.
 export const GOSSIP_LEVELS = [
@@ -40,6 +40,7 @@ export function Gossip({ t, ctx, items, setItems }) {
   const [sort, setSort] = useState("new");
   const sel = inputStyle(t);
   const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
+  useHighlight(ctx.highlightId);
 
   const levelOrder = (id) => { const i = GOSSIP_LEVELS.findIndex((l) => l.id === (id || "")); return i < 0 ? 99 : i; };
   const areaOrder = (id) => { const i = GOSSIP_AREAS.findIndex((a) => a.id === (id || "")); return i < 0 ? 99 : i; };
@@ -178,7 +179,7 @@ export function Gossip({ t, ctx, items, setItems }) {
             const who = ctx.userById && ctx.userById(x.addedBy);
             const comments = x.comments || [];
             return (
-              <div key={x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderLeft: `4px solid ${lv && lv.id ? lv.color : t.border}`, borderRadius: 12, padding: "12px 14px" }}>
+              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderLeft: `4px solid ${lv && lv.id ? lv.color : t.border}`, borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {x.title && <div style={{ fontWeight: 800, fontSize: 15, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}
@@ -197,7 +198,7 @@ export function Gossip({ t, ctx, items, setItems }) {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 4, flex: "none" }}>
+                  <div style={{ display: "flex", gap: 12, flex: "none" }}>
                     <button onClick={() => edit(x)} title="Bearbeiten" style={iconBtn}>✏️</button>
                     <button onClick={() => remove(x.id)} title="Löschen" style={iconBtn}>🗑️</button>
                   </div>
@@ -239,4 +240,7 @@ export function Gossip({ t, ctx, items, setItems }) {
   );
 }
 
-const iconBtn = { background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 3, borderRadius: 6, lineHeight: 1 };
+const iconBtn = {
+  background: "none", border: "none", cursor: "pointer", fontSize: 17, borderRadius: 8, lineHeight: 1,
+  minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+};

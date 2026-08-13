@@ -5,9 +5,17 @@ import React from "react";
 import { priorityById, timeToMin, occTimeLabel } from "./data.js";
 
 // --- Modal -------------------------------------------------------------
-export function Modal({ t, title, onClose, children, footer, wide }) {
+export function Modal({ t, title, onClose, children, footer, wide, hasChanges }) {
+  // Klick auf den Hintergrund: bei ungespeicherten Eingaben erst nachfragen –
+  // sonst ist ein Fehltipp neben dem Dialog gleichbedeutend mit Datenverlust.
+  function onBackdrop() {
+    if (hasChanges && hasChanges()) {
+      if (typeof window !== "undefined" && !window.confirm("Änderungen verwerfen?")) return;
+    }
+    onClose();
+  }
   return (
-    <div onClick={onClose} style={{
+    <div onClick={onBackdrop} style={{
       position: "fixed", inset: 0, background: "rgba(5,10,22,.62)", zIndex: 200,
       display: "flex", alignItems: "flex-start", justifyContent: "center",
       padding: "max(16px, env(safe-area-inset-top)) 12px 24px", overflowY: "auto",
@@ -105,11 +113,28 @@ export function Toast({ t, toast }) {
   return (
     <div style={{
       position: "fixed", left: "50%", transform: "translateX(-50%)",
-      bottom: "calc(64px + env(safe-area-inset-bottom))", zIndex: 400,
+      bottom: "calc(92px + env(safe-area-inset-bottom))", zIndex: 400,
       background: bg, color: "#fff", padding: "11px 18px", borderRadius: 12,
       fontSize: 14, fontWeight: 700, boxShadow: "0 8px 24px rgba(0,0,0,.35)", maxWidth: "90vw",
     }}>{toast.msg}</div>
   );
+}
+
+// --- Suchtreffer anspringen -------------------------------------------
+// Scrollt zu dem Eintrag mit der ID und hebt ihn kurz hervor. Die Listen-Module
+// setzen dazu id={"hl-" + x.id} auf ihre Zeile.
+export function useHighlight(highlightId) {
+  React.useEffect(() => {
+    if (!highlightId) return;
+    const el = document.getElementById("hl-" + highlightId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const prev = el.style.boxShadow;
+    el.style.transition = "box-shadow .25s ease";
+    el.style.boxShadow = "0 0 0 3px #2E5BFF";
+    const tm = setTimeout(() => { el.style.boxShadow = prev; }, 2200);
+    return () => clearTimeout(tm);
+  }, [highlightId]);
 }
 
 // --- Farbpunkt ---------------------------------------------------------

@@ -15,7 +15,7 @@
     <title>Kalender – Familie & Business</title>
     <style>
       html, body { margin: 0; padding: 0; }
-      body { overflow-x: hidden; background: #EEF2F8; -webkit-text-size-adjust: 100%; }
+      body { overflow-x: hidden; background: #0B1426; -webkit-text-size-adjust: 100%; }
       #root { min-height: 100vh; }
       * { box-sizing: border-box; }
       /* Eingabefelder dürfen ihren Container nie sprengen (v. a. iOS date/time) */
@@ -30,6 +30,20 @@
           -moz-osx-font-smoothing: grayscale;
         }
       }
+      /* Tastatur-Bedienung: sichtbarer Fokus (Eingabefelder setzen outline:none) */
+      :focus-visible {
+        outline: 2px solid #2E5BFF;
+        outline-offset: 2px;
+        border-radius: 6px;
+      }
+      /* Rueckmeldung beim Tippen/Ueberfahren – sonst wirken Buttons "tot" */
+      button { transition: filter .12s ease, transform .08s ease; }
+      @media (hover: hover) { button:hover:not(:disabled) { filter: brightness(1.08); } }
+      button:active:not(:disabled) { transform: scale(.97); filter: brightness(.94); }
+      /* Monatsansicht auch am Handy gut treffbar (Balken/Tageszahlen groesser) */
+      .cal-bars { grid-auto-rows: 22px !important; row-gap: 3px !important; }
+      .cal-bar { line-height: 22px !important; font-size: 11px !important; border-radius: 5px !important; padding: 0 6px !important; }
+      .cal-daynum { width: 26px !important; height: 26px !important; line-height: 26px !important; font-size: 13px !important; }
       /* Desktop/Tablet: Monatsansicht großzügiger, damit sie wie ein echter
          Kalender wirkt (am Handy bleibt die kompakte Darstellung). */
       @media (min-width: 760px) {

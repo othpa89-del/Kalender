@@ -3,7 +3,7 @@
 // ===========================================================================
 import React, { useState } from "react";
 import { uid, PRIORITIES, priorityById, todayISO, fmtDateShort } from "./data.js";
-import { Field, inputStyle, Btn, Dot } from "./components.jsx";
+import { Field, inputStyle, Btn, Dot, useHighlight } from "./components.jsx";
 
 export function Tasks({ t, ctx, tasks, setTasks }) {
   const [f, setF] = useState(blankTask(ctx));
@@ -11,6 +11,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   const [filter, setFilter] = useState("open"); // open | done | all
   const sel = inputStyle(t, true);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  useHighlight(ctx.highlightId);
 
   function save() {
     if (!f.title.trim()) { ctx.flash("Bitte einen Titel eingeben.", "error"); return; }
@@ -21,7 +22,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
     }
     setF(blankTask(ctx)); setEditId(null);
   }
-  function edit(x) { setF({ ...x }); setEditId(x.id); }
+  function edit(x) { setF({ ...x }); setEditId(x.id); window.scrollTo({ top: 0, behavior: "smooth" }); }
   function toggle(id) { setTasks(tasks.map((x) => (x.id === id ? { ...x, done: !x.done } : x))); }
   function remove(id) {
     const x = tasks.find((t) => t.id === id);
@@ -91,14 +92,14 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {visible.map((x) => {
-            const prio = priorityById(x.priority);
+            const prio = x.priority ? priorityById(x.priority) : null;
             const who = ctx.userById(x.assigneeId);
             const creator = ctx.userById(x.addedBy);
             const overdue = x.due && !x.done && x.due < todayISO();
             return (
-              <div key={x.id} style={{
+              <div key={x.id} id={"hl-" + x.id} style={{
                 display: "flex", alignItems: "flex-start", gap: 10, background: t.surface,
-                border: `1px solid ${overdue ? "#E53935" : t.border}`, borderLeft: `4px solid ${prio.color}`,
+                border: `1px solid ${overdue ? "#E53935" : t.border}`, borderLeft: `4px solid ${prio ? prio.color : t.borderSoft}`,
                 borderRadius: 10, padding: "10px 12px",
               }}>
                 <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
@@ -111,11 +112,11 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
                   <div style={{ display: "flex", gap: 10, marginTop: 5, flexWrap: "wrap", fontSize: 11.5, color: t.muted }}>
                     {x.due && <span style={{ color: overdue ? "#E53935" : t.muted, fontWeight: overdue ? 800 : 600 }}>📅 {fmtDateShort(x.due)}{overdue ? " (überfällig)" : ""}</span>}
                     {who && <span title="Verantwortlich" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Dot color={who.color} size={9} />{who.name}</span>}
-                    <span>{prio.dot} {prio.name}</span>
+                    {prio && <span>{prio.dot} {prio.name}</span>}
                     {creator && <span title="Eingetragen von" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>✎ <Dot color={creator.color} size={9} />{creator.name}</span>}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 4, flex: "none" }}>
+                <div style={{ display: "flex", gap: 12, flex: "none" }}>
                   <button onClick={() => edit(x)} style={iconBtn(t)} title="Bearbeiten">✏️</button>
                   <button onClick={() => remove(x.id)} style={iconBtn(t)} title="Löschen">🗑️</button>
                 </div>
@@ -131,4 +132,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
 function blankTask(ctx) {
   return { title: "", description: "", assigneeId: "", due: "", priority: "" };
 }
-const iconBtn = (t) => ({ background: "none", border: "none", cursor: "pointer", fontSize: 15, padding: 3, borderRadius: 6 });
+const iconBtn = (t) => ({
+  background: "none", border: "none", cursor: "pointer", fontSize: 17, borderRadius: 8,
+  minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+});

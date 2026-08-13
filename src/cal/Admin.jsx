@@ -5,6 +5,13 @@ import React, { useState } from "react";
 import { uid, ICON_CHOICES } from "./data.js";
 import { Modal, Field, inputStyle, Btn, Segmented, Dot } from "./components.jsx";
 
+// Rueckfrage vor dem Loeschen: in der Verwaltung haengt an einem Benutzer/Bereich
+// die Zuordnung aller bestehenden Eintraege.
+function askDelete(what) {
+  if (typeof window === "undefined") return true;
+  return window.confirm(`„${what}" wirklich löschen?`);
+}
+
 export function Admin({ t, ctx, onClose }) {
   const [tab, setTab] = useState("users");
   const sel = inputStyle(t);
@@ -52,6 +59,8 @@ function UsersAdmin({ t, ctx, sel }) {
     if (admins.length <= 1 && admins.some((u) => u.id === id)) {
       ctx.flash("Der letzte Administrator kann nicht gelöscht werden.", "warn"); return;
     }
+    const target = ctx.users.find((u) => u.id === id);
+    if (!askDelete(target ? target.name : "Benutzer")) return;
     const rest = ctx.users.filter((u) => u.id !== id);
     ctx.setUsers(rest);
     // War der gelöschte Benutzer der aktive, auf einen vorhandenen umstellen –
@@ -95,6 +104,8 @@ function AreasAdmin({ t, ctx, sel }) {
   }
   function remove(id) {
     if (ctx.areas.length <= 1) { ctx.flash("Mindestens ein Bereich ist erforderlich.", "warn"); return; }
+    const target = ctx.areas.find((a) => a.id === id);
+    if (!askDelete(target ? target.name : "Bereich")) return;
     ctx.setAreas(ctx.areas.filter((a) => a.id !== id));
   }
   return (
@@ -132,7 +143,11 @@ function TypesAdmin({ t, ctx, sel }) {
     ctx.setTypes([...ctx.types, { id: uid("t"), name: newName.trim(), icon: newIcon, active: true, aviation: false }]);
     setNewName(""); setNewIcon("📌");
   }
-  function remove(id) { ctx.setTypes(ctx.types.filter((x) => x.id !== id)); }
+  function remove(id) {
+    const target = ctx.types.find((x) => x.id === id);
+    if (!askDelete(target ? target.name : "Terminart")) return;
+    ctx.setTypes(ctx.types.filter((x) => x.id !== id));
+  }
 
   return (
     <div>

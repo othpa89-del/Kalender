@@ -110,6 +110,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
 
   return (
     <Modal t={t} wide title={isNew ? "Neuer Termin" : readOnly ? "Termin (gesperrt)" : "Termin bearbeiten"} onClose={onClose}
+      hasChanges={() => JSON.stringify(f) !== JSON.stringify(draft)}
       footer={
         <>
           {!isNew && canEdit && <Btn t={t} kind="danger" onClick={() => onDelete(f)} style={{ marginRight: "auto" }}>Löschen</Btn>}
@@ -133,7 +134,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
               const icon = q.icon || ctx.typeById(q.typeId)?.icon || "📌";
               return (
                 <button key={q.id} onClick={() => setF((p) => ({
-                  ...p, title: p.title || q.label, icon: q.icon || p.icon,
+                  ...p, title: q.label, icon: q.icon || p.icon,
                 }))} style={{
                   display: "flex", alignItems: "center", gap: 5, background: t.chip, color: t.text,
                   border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "6px 11px",

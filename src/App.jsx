@@ -33,8 +33,13 @@ async function loadJSON(key, fallback) {
   try { const r = await window.storage.get(key, true); return r && r.value ? JSON.parse(r.value) : fallback; }
   catch { return fallback; }
 }
+// Meldet Schreibfehler an die App (wird unten gesetzt). Ohne das wuerde ein
+// fehlgeschlagener Cloud-Schreibvorgang stumm verschluckt und die App faelschlich
+// "gespeichert" melden.
+let writeErrorHandler = null;
 async function saveJSON(key, val) {
-  try { await window.storage.set(key, JSON.stringify(val), true); } catch {}
+  try { await window.storage.set(key, JSON.stringify(val), true); }
+  catch (e) { if (writeErrorHandler) writeErrorHandler(e); }
 }
 
 // Sammlung (Termine/Aufgaben) aus den Einzelzeilen laden.
@@ -88,6 +93,7 @@ export default function App() {
   const [shopStore, setShopStore] = useState([]);
   const [settings, setSettings] = useState({ themeMode: "light", activeUserId: "u_patrick" });
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const [view, setView] = useState("dashboard"); // dashboard|day|week|month|tasks|shopping|notes|gossip
   const [cursor, setCursor] = useState(todayISO());
@@ -103,6 +109,7 @@ export default function App() {
   const [editor, setEditor] = useState(null); // {draft, isNew}
   const [adminOpen, setAdminOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState(null); // Suchtreffer hervorheben
   const [confirmDel, setConfirmDel] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
@@ -150,6 +157,19 @@ export default function App() {
     if (fn) fn();
   }, []);
 
+  // Schreibfehler sichtbar machen: sonst meldet die App "gespeichert", obwohl
+  // nichts in der Cloud gelandet ist.
+  const writeErrTimer = useRef(null);
+  useEffect(() => {
+    writeErrorHandler = () => {
+      clearTimeout(writeErrTimer.current);
+      writeErrTimer.current = setTimeout(() => {
+        flash("Nicht gespeichert – keine Verbindung. Bitte 🔄 neu laden.", "error");
+      }, 200);
+    };
+    return () => { writeErrorHandler = null; };
+  }, [flash]);
+
   // ---------- Benachrichtigung bei neuen Einträgen (In-App, App offen) ----------
   // Zeigt eine System-Benachrichtigung, wenn per Live-Sync ein neuer Eintrag
   // ankommt – aber nur für Einträge von ANDEREN (nicht den eigenen, eben
@@ -196,7 +216,7 @@ export default function App() {
       // aussäen. Ein Tipp auf 🔄 lädt erneut.
       if ([ev, tk, sh, nt, go, fv, stores].some((x) => x === null)) {
         if (!on) return;
-        flash("Daten konnten nicht geladen werden. Bitte 🔄 neu laden.", "error");
+        setLoadError(true);
         return;
       }
       // Einmalige Migration aus früheren Einzel-Blobs in Einzelzeilen
@@ -360,7 +380,7 @@ export default function App() {
     users, areas, types, events,
     activeUserId: settings.activeUserId,
     quickTemplates: QUICK_TEMPLATES,
-    typeById, areaById, userById, flash, deleteWithUndo,
+    typeById, areaById, userById, flash, deleteWithUndo, showUndo, highlightId,
     setActiveUserId: (id) => persist.settings({ ...settings, activeUserId: id }),
     setUsers: persist.users, setAreas: persist.areas, setTypes: persist.types,
   };
@@ -527,6 +547,18 @@ export default function App() {
     reader.readAsText(file);
   }
 
+  if (loadError) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, textAlign: "center", background: t.bg, color: t.text, fontFamily: FONT }}>
+        <div style={{ fontSize: 34 }}>⚠️</div>
+        <div style={{ fontWeight: 800, fontSize: 17 }}>Daten konnten nicht geladen werden</div>
+        <div style={{ fontSize: 14, color: t.muted, maxWidth: 320 }}>
+          Bitte Internetverbindung prüfen. Deine Daten sind sicher in der Cloud – es wurde nichts verändert.
+        </div>
+        <Btn t={t} kind="primary" onClick={() => window.location.reload()}>Erneut versuchen</Btn>
+      </div>
+    );
+  }
   if (!loaded) {
     return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg, color: t.muted, fontFamily: FONT }}>Kalender lädt …</div>;
   }
@@ -549,6 +581,9 @@ export default function App() {
     { id: "notes", label: "Nice to know" },
     { id: "gossip", label: "Gossip" },
   ];
+  // Anzahl aktiver Filter – sonst fehlen Termine scheinbar grundlos, wenn das
+  // Filter-Panel zugeklappt ist.
+  const activeFilterCount = [fUser, fArea, fPrio, fType, fPart].filter((x) => x !== "all").length;
   const showNav = ["day", "week", "month"].includes(view);
   const isList = ["tasks", "shopping", "notes", "gossip"].includes(view); // eigene Eingabe, kein Termin-Toolbar
 
@@ -572,8 +607,9 @@ export default function App() {
   ].sort((a, b) => (b.ts || 0) - (a.ts || 0));
   function openResult(r) {
     if (r.kind === "event") { openEvent(r.item); return; }
-    changeView(r.kind);   // zum passenden Tab wechseln …
-    setSearch("");        // … und Suche leeren, damit der Tab angezeigt wird
+    changeView(r.kind);            // zum passenden Tab wechseln …
+    setSearch("");                 // … Suche leeren, damit der Tab erscheint …
+    setHighlightId(r.item.id);     // … und den Treffer dort anspringen/hervorheben
   }
 
   return (
@@ -585,7 +621,8 @@ export default function App() {
             <span style={{ fontSize: 20 }}>📅</span>
             <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-              {/* aktiver Benutzer */}
+              {/* aktiver Benutzer (Ersteller neuer Einträge) */}
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.7)", whiteSpace: "nowrap" }}>Angemeldet als</span>
               <select value={settings.activeUserId} onChange={(e) => persist.settings({ ...settings, activeUserId: e.target.value })}
                 title="Aktiver Benutzer" style={{
                   background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)",
@@ -664,7 +701,18 @@ export default function App() {
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche über alles (Termine, Aufgaben, Einkauf, Notizen, Gossip)…"
                 style={{ flex: 1, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
               {search && <Btn t={t} kind="ghost" onClick={() => setSearch("")} style={{ flex: "none" }}>✕</Btn>}
-              {!isList && <Btn t={t} kind={showFilters ? "primary" : "ghost"} onClick={() => setShowFilters((o) => !o)}>Filter</Btn>}
+              {!isList && (
+                <Btn t={t} kind={(showFilters || activeFilterCount > 0) ? "primary" : "ghost"}
+                  onClick={() => setShowFilters((o) => !o)} style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  Filter
+                  {activeFilterCount > 0 && (
+                    <span style={{
+                      background: "rgba(255,255,255,.3)", borderRadius: 9, padding: "1px 6px",
+                      fontSize: 11, fontWeight: 800, lineHeight: 1.5,
+                    }}>{activeFilterCount}</span>
+                  )}
+                </Btn>
+              )}
             </div>
             {!isList && showFilters && (
               <div style={{ marginTop: 10, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -760,11 +808,11 @@ export default function App() {
 
       <Toast t={t} toast={toast} />
 
-      {/* „Rückgängig" nach dem Löschen */}
+      {/* „Rückgängig" nach dem Löschen – sitzt ÜBER dem Toast (gestapelt) */}
       {undo && (
         <div style={{
           position: "fixed", left: "50%", transform: "translateX(-50%)",
-          bottom: "calc(84px + env(safe-area-inset-bottom))", zIndex: 440,
+          bottom: `calc(${toast ? 148 : 92}px + env(safe-area-inset-bottom))`, zIndex: 440,
           background: t.navy, color: "#fff", borderRadius: 12, padding: "9px 10px 9px 16px",
           display: "flex", alignItems: "center", gap: 14, maxWidth: "92vw",
           boxShadow: "0 10px 30px rgba(0,0,0,.4)",

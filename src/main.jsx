@@ -164,8 +164,17 @@ function Root() {
   return (
     <div>
       <App key={currentUserId} />
-      <button onClick={() => supabase.auth.signOut()}
-        style={{ position: "fixed", bottom: "calc(12px + env(safe-area-inset-bottom))", right: "calc(12px + env(safe-area-inset-right))", zIndex: 50, fontFamily: "Mulish, sans-serif", fontSize: 12, fontWeight: 700, color: "#575757", background: "#fff", border: "1px solid #D7D7D7", borderRadius: 8, padding: "6px 10px", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}>
+      <button
+        onClick={() => { if (window.confirm("Wirklich abmelden?")) supabase.auth.signOut(); }}
+        style={{
+          position: "fixed", bottom: "calc(12px + env(safe-area-inset-bottom))",
+          right: "calc(12px + env(safe-area-inset-right))", zIndex: 50,
+          fontFamily: "Mulish, sans-serif", fontSize: 13, fontWeight: 700,
+          color: "rgba(255,255,255,.9)", background: "rgba(22,35,63,.85)",
+          border: "1px solid rgba(255,255,255,.22)", borderRadius: 10,
+          minHeight: 44, padding: "0 14px", cursor: "pointer",
+          backdropFilter: "blur(6px)", boxShadow: "0 4px 14px rgba(0,0,0,.25)",
+        }}>
         Abmelden
       </button>
     </div>
