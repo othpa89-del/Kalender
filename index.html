@@ -20,6 +20,22 @@
       * { box-sizing: border-box; }
       /* Eingabefelder dürfen ihren Container nie sprengen (v. a. iOS date/time) */
       input, select, textarea { max-width: 100%; min-width: 0; }
+      /* iOS/iPadOS: Datum- und Uhrzeitfelder haben eine grosse Eigenbreite und
+         lassen sich sonst nicht schmal genug rechnen -> sie ueberlappen. */
+      input[type="date"], input[type="time"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        min-height: 42px;
+        text-align: left;
+      }
+      /* Datum/Uhrzeit-Paare: am Handy untereinander, ab Tablet nebeneinander.
+         So koennen sie sich auf schmalen Geraeten gar nicht erst ueberlappen. */
+      .dt-row { display: flex; gap: 10px; flex-wrap: wrap; }
+      .dt-col { flex: 1 1 100%; min-width: 0; }
+      @media (min-width: 560px) {
+        .dt-col { flex: 1 1 46%; }
+      }
       /* Nur Desktop: kein 0.9-Zoom (das macht am großen Bildschirm unscharf und
          lässt die Schrift zu fett wirken) + sauberes Antialiasing. Handy/iPad
          behalten die kompakte 0.9-Darstellung. */

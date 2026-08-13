@@ -106,7 +106,8 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
 
   const sel = inputStyle(t);
   // Kompakter Stil für Datum-/Uhrzeit-Felder (niedrigere Zellen)
-  const dt = { ...sel, padding: "6px 9px", fontSize: 14 };
+  // 16px: sonst zoomt iOS beim Antippen in das Feld hinein.
+  const dt = { ...sel, padding: "8px 10px" };
 
   return (
     <Modal t={t} wide title={isNew ? "Neuer Termin" : readOnly ? "Termin (gesperrt)" : "Termin bearbeiten"} onClose={onClose}
@@ -158,30 +159,30 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           🗓️ Ganztägig
         </label>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+        <div className="dt-row">
+          <div className="dt-col">
             <Field t={t} label="Beginn – Datum" required>
               <input type="date" style={dt} value={f.date}
                 onChange={(e) => setStartDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
-            <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+            <div className="dt-col">
               <Field t={t} label="Beginn – Uhrzeit" required>
                 <input type="time" style={dt} value={f.start} onChange={(e) => set("start", e.target.value)} />
               </Field>
             </div>
           )}
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+        <div className="dt-row">
+          <div className="dt-col">
             <Field t={t} label="Ende – Datum" required hint="Für mehrtägige Termine späteres Datum wählen.">
               <input type="date" style={dt} value={f.endDate || f.date} min={f.date}
                 onChange={(e) => setEndDate(e.target.value)} />
             </Field>
           </div>
           {!f.allDay && (
-            <div style={{ flex: "1 1 110px", minWidth: 0 }}>
+            <div className="dt-col">
               <Field t={t} label="Ende – Uhrzeit" required>
                 <input type="time" style={dt} value={f.end} onChange={(e) => set("end", e.target.value)} />
               </Field>
