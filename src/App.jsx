@@ -355,6 +355,20 @@ export default function App() {
     gossip:   [gossipRef, persist.gossip, "Gossip-Eintrag"],
     shopping: [shoppingRef, persist.shopping, "Artikel"],
   };
+  // Mehrere Elemente auf einmal loeschen und zurueckholen. Nutzt die Refs, damit
+  // in der Undo-Zeit neu angelegte (oder per Sync eingetroffene) Eintraege NICHT
+  // ueberschrieben werden.
+  function deleteManyWithUndo(kind, itemsToRemove, msg) {
+    const entry = DEL_KINDS[kind]; if (!entry || !itemsToRemove.length) return;
+    const [ref, setter] = entry;
+    const ids = new Set(itemsToRemove.map((x) => x.id));
+    setter(ref.current.filter((x) => !ids.has(x.id)));
+    showUndo(msg, () => {
+      const have = new Set(ref.current.map((x) => x.id));
+      const back = itemsToRemove.filter((x) => !have.has(x.id));
+      if (back.length) setter([...ref.current, ...back]);
+    });
+  }
   function deleteWithUndo(kind, item) {
     const entry = DEL_KINDS[kind]; if (!entry || !item) return;
     const [ref, setter, name] = entry;
@@ -380,7 +394,8 @@ export default function App() {
     users, areas, types, events,
     activeUserId: settings.activeUserId,
     quickTemplates: QUICK_TEMPLATES,
-    typeById, areaById, userById, flash, deleteWithUndo, showUndo, highlightId,
+    typeById, areaById, userById, flash, deleteWithUndo, deleteManyWithUndo, showUndo, highlightId,
+    clearHighlight: () => setHighlightId(null),
     setActiveUserId: (id) => persist.settings({ ...settings, activeUserId: id }),
     setUsers: persist.users, setAreas: persist.areas, setTypes: persist.types,
   };
@@ -699,7 +714,7 @@ export default function App() {
         <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche über alles (Termine, Aufgaben, Einkauf, Notizen, Gossip)…"
-                style={{ flex: 1, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
+                style={{ flex: 1, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 16, fontFamily: "inherit", outline: "none" }} />
               {search && <Btn t={t} kind="ghost" onClick={() => setSearch("")} style={{ flex: "none" }}>✕</Btn>}
               {!isList && (
                 <Btn t={t} kind={(showFilters || activeFilterCount > 0) ? "primary" : "ghost"}
@@ -847,7 +862,7 @@ function FilterSelect({ t, label, value, onChange, options }) {
       <div style={{ fontSize: 11, fontWeight: 700, color: t.muted, marginBottom: 4 }}>{label}</div>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{
         padding: "8px 10px", border: `1px solid ${t.border}`, borderRadius: 9, background: t.input,
-        color: t.text, fontSize: 13, fontFamily: "inherit", width: "100%", maxWidth: "100%", minWidth: 0,
+        color: t.text, fontSize: 16, fontFamily: "inherit", width: "100%", maxWidth: "100%", minWidth: 0,
       }}>
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>

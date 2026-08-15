@@ -73,18 +73,25 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
   const nowMin = todayISO() === dateISO
     ? new Date().getHours() * 60 + new Date().getMinutes() : null;
 
-  // Beim Öffnen dorthin scrollen, wo etwas los ist (erster Termin bzw. „jetzt"),
-  // statt den Nutzer jedes Mal aus der leeren Nacht heraufscrollen zu lassen.
+  // Einmal beim Öffnen dorthin scrollen, wo etwas los ist (erster Termin bzw.
+  // „jetzt"). NICHT bei jedem Blättern – sonst ist die ‹ › -Leiste nach jedem
+  // Tippen weggescrollt. getBoundingClientRect rechnet den zoom-Faktor bereits
+  // mit ein, offsetTop dagegen nicht.
+  const didScrollRef = React.useRef(false);
   React.useEffect(() => {
+    if (didScrollRef.current) return;
     const el = gridRef.current;
     if (!el) return;
+    didScrollRef.current = true;
     const firstMin = dayItems.length
       ? Math.min(...dayItems.map((e) => timeToMin(e.start)))
       : (nowMin != null ? nowMin : 8 * 60);
-    const top = el.offsetTop + Math.max(0, (firstMin / 60) * HOUR - 40);
+    const rect = el.getBoundingClientRect();
+    const zoomFactor = el.offsetHeight ? rect.height / el.offsetHeight : 1;
+    const top = window.scrollY + rect.top + Math.max(0, ((firstMin / 60) * HOUR - 40) * zoomFactor);
     window.scrollTo({ top, behavior: "auto" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateISO]);
+  }, []);
 
   return (
     <div>
@@ -356,10 +363,10 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 );
               })}
               {ofIdx.map((idx) => (
-                <button key={"of" + idx} onClick={() => onPickDay(toISODate(weekDays[Number(idx)]))}
+                <button key={"of" + idx} className="cal-more" onClick={() => onPickDay(toISODate(weekDays[Number(idx)]))}
                   title="Alle Termine des Tages öffnen" style={{
                     gridColumn: `${Number(idx) + 2} / span 1`, gridRow: MONTH_MAX_LANES + 1,
-                    fontSize: 8.5, fontWeight: 800, color: t.accent, textAlign: "center", lineHeight: "12px",
+                    fontSize: 11, fontWeight: 800, color: t.accent, textAlign: "center", lineHeight: "20px",
                     background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0,
                   }}>+{overflow[idx]}</button>
               ))}

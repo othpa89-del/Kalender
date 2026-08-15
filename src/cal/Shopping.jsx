@@ -54,7 +54,16 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   const [showDone, setShowDone] = useState(false); // erledigte Artikel ein-/ausklappen
   const sel = inputStyle(t);
   const lastAdd = useRef({ key: "", time: 0 }); // gegen Doppeltipp/Ghost-Click
-  useHighlight(ctx.highlightId);
+  // Treffer kann auf einer anderen Liste oder unter "Erledigt" liegen ->
+  // Liste wechseln und den erledigt-Bereich aufklappen.
+  React.useEffect(() => {
+    const hit = items.find((x) => x.id === ctx.highlightId);
+    if (!hit) return;
+    const lid = hit.list || (defaultList ? defaultList.id : "");
+    if (lid) setActiveList(lid);
+    if (hit.done) setShowDone(true);
+  }, [ctx.highlightId]);
+  useHighlight(ctx.highlightId, ctx.clearHighlight, () => ctx.flash && ctx.flash("Artikel nicht mehr vorhanden.", "warn"));
 
   // Standardliste beim Öffnen: „Allgemein" (falls vorhanden), sonst die erste.
   const defaultList = lists.find((l) => (l.name || "").trim().toLowerCase() === "allgemein") || lists[0];
@@ -127,9 +136,13 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   function checkAll() { setItems(items.map((x) => (inActive(x) && !x.done ? { ...x, done: true } : x))); }
   function clearDone() {
     const removed = items.filter((x) => x.done && inActive(x));
-    setItems(items.filter((x) => !(x.done && inActive(x))));
-    if (removed.length && ctx.showUndo) {
-      ctx.showUndo(`${removed.length} erledigte entfernt`, () => setItems([...items]));
+    if (!removed.length) return;
+    // Ueber die Refs der App: sonst wuerde ein in der Undo-Zeit neu angelegter
+    // Artikel beim "Rueckgaengig" wieder verschwinden.
+    if (ctx.deleteManyWithUndo) {
+      ctx.deleteManyWithUndo("shopping", removed, `${removed.length} erledigte entfernt`);
+    } else {
+      setItems(items.filter((x) => !(x.done && inActive(x))));
     }
   }
   function clearAll() {
@@ -357,20 +370,23 @@ function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, s
       )}
       {who && !editing && <span title={`Hinzugefügt von ${who.name}`} style={{ flex: "none" }}><Dot color={who.color} size={9} /></span>}
       {editing ? (
-        <button onClick={commitEdit} aria-label="Fertig" style={{
-          background: "none", border: "none", color: t.accent, cursor: "pointer", fontSize: 16, flex: "none", lineHeight: 1, padding: 2,
-        }}>✓</button>
+        <button onClick={commitEdit} aria-label="Fertig" style={{ ...shopIconBtn, color: t.accent }}>✓</button>
       ) : (
-        <button onClick={() => startEdit(x)} aria-label="Bearbeiten" style={{
-          background: "none", border: "none", cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1, padding: 2,
-        }}>✏️</button>
+        <button onClick={() => startEdit(x)} aria-label="Bearbeiten" style={shopIconBtn}>✏️</button>
       )}
-      <button onClick={() => remove(x.id)} aria-label="Löschen" style={{
-        background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, flex: "none", lineHeight: 1, padding: 2,
-      }}>×</button>
+      {/* Abstand zum Loeschen, damit man beim Bearbeiten nicht danebentippt */}
+      <button onClick={() => remove(x.id)} aria-label="Löschen"
+        style={{ ...shopIconBtn, color: t.faint, fontSize: 22, marginLeft: 2 }}>×</button>
     </div>
   );
 }
+
+// Trefferflaeche 44px – sonst loescht man am iPhone beim Bearbeiten daneben.
+const shopIconBtn = {
+  background: "none", border: "none", cursor: "pointer", fontSize: 17, lineHeight: 1,
+  minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center",
+  justifyContent: "center", padding: 0, flex: "none",
+};
 
 function ActionLink({ t, children, onClick, danger, style }) {
   return (

@@ -39,8 +39,15 @@ export function Gossip({ t, ctx, items, setItems }) {
   const [fArea, setFArea] = useState("all");
   const [sort, setSort] = useState("new");
   const sel = inputStyle(t);
-  const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
-  useHighlight(ctx.highlightId);
+  // 16px: sonst zoomt iOS beim Antippen hinein.
+  const ctrl = { ...sel, padding: "7px 9px" };
+  // Rubrik-/Level-Filter zuruecksetzen, sonst waere der Treffer ausgeblendet.
+  React.useEffect(() => {
+    if (!ctx.highlightId || !items.some((x) => x.id === ctx.highlightId)) return;
+    if (setFLevel) setFLevel("all");
+    setFArea("all");
+  }, [ctx.highlightId]);
+  useHighlight(ctx.highlightId, ctx.clearHighlight, () => ctx.flash && ctx.flash("Eintrag nicht mehr vorhanden.", "warn"));
 
   const levelOrder = (id) => { const i = GOSSIP_LEVELS.findIndex((l) => l.id === (id || "")); return i < 0 ? 99 : i; };
   const areaOrder = (id) => { const i = GOSSIP_AREAS.findIndex((a) => a.id === (id || "")); return i < 0 ? 99 : i; };

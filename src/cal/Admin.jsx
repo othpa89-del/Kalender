@@ -178,24 +178,41 @@ function TypesAdmin({ t, ctx, sel }) {
 
 function IconPicker({ t, value, onChange }) {
   const [open, setOpen] = useState(false);
+  // Die Terminarten-Liste scrollt (maxHeight) und wuerde ein absolut
+  // positioniertes Popover abschneiden -> als zentriertes Overlay anzeigen.
   return (
     <div style={{ position: "relative", flex: "none" }}>
-      <button onClick={() => setOpen((o) => !o)} style={{
-        width: 42, height: 40, fontSize: 20, background: t.input, border: `1px solid ${t.border}`,
+      <button onClick={() => setOpen(true)} aria-label="Icon wählen" style={{
+        width: 44, height: 44, fontSize: 20, background: t.input, border: `1px solid ${t.border}`,
         borderRadius: 8, cursor: "pointer",
       }}>{value}</button>
       {open && (
-        <div style={{
-          position: "absolute", top: 44, left: 0, zIndex: 10, background: t.surface,
-          border: `1px solid ${t.border}`, borderRadius: 10, padding: 8, width: 252,
-          display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3, boxShadow: t.shadow,
+        <div onClick={() => setOpen(false)} style={{
+          position: "fixed", inset: 0, zIndex: 300, background: "rgba(5,10,22,.55)",
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
         }}>
-          {ICON_CHOICES.map((ic) => (
-            <button key={ic} onClick={() => { onChange(ic); setOpen(false); }} style={{
-              fontSize: 18, padding: 4, background: ic === value ? t.chip : "transparent",
-              border: "none", borderRadius: 6, cursor: "pointer",
-            }}>{ic}</button>
-          ))}
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14,
+            padding: 12, width: "100%", maxWidth: 340, maxHeight: "70vh", overflowY: "auto",
+            boxShadow: t.shadow,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: t.text }}>Icon wählen</span>
+              <button onClick={() => setOpen(false)} aria-label="Schließen" style={{
+                background: "none", border: "none", color: t.muted, fontSize: 22, cursor: "pointer",
+                minWidth: 44, minHeight: 44, lineHeight: 1,
+              }}>×</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(44px, 1fr))", gap: 4 }}>
+              {ICON_CHOICES.map((ic) => (
+                <button key={ic} onClick={() => { onChange(ic); setOpen(false); }} style={{
+                  fontSize: 20, minHeight: 44, background: ic === value ? t.chip : "transparent",
+                  border: `1px solid ${ic === value ? t.accent : "transparent"}`,
+                  borderRadius: 8, cursor: "pointer",
+                }}>{ic}</button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

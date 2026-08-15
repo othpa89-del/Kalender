@@ -11,7 +11,11 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   const [filter, setFilter] = useState("open"); // open | done | all
   const sel = inputStyle(t, true);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  useHighlight(ctx.highlightId);
+  // Treffer koennte durch den Filter "Offen" verborgen sein -> auf "Alle" stellen.
+  React.useEffect(() => {
+    if (ctx.highlightId && tasks.some((x) => x.id === ctx.highlightId)) setFilter("all");
+  }, [ctx.highlightId]);
+  useHighlight(ctx.highlightId, ctx.clearHighlight, () => ctx.flash && ctx.flash("Eintrag nicht mehr vorhanden.", "warn"));
 
   function save() {
     if (!f.title.trim()) { ctx.flash("Bitte einen Titel eingeben.", "error"); return; }
@@ -77,7 +81,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
       {/* Liste */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>Aufgaben</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...sel, width: "auto", padding: "5px 8px", fontSize: 13 }}>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...sel, width: "auto", padding: "6px 8px" }}>
           <option value="open">Offen</option>
           <option value="done">Erledigt</option>
           <option value="all">Alle</option>

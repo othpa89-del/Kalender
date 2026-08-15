@@ -112,13 +112,13 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   return (
     <Modal t={t} wide title={isNew ? "Neuer Termin" : readOnly ? "Termin (gesperrt)" : "Termin bearbeiten"} onClose={onClose}
       hasChanges={() => JSON.stringify(f) !== JSON.stringify(draft)}
-      footer={
+      footer={(requestClose) => (
         <>
           {!isNew && canEdit && <Btn t={t} kind="danger" onClick={() => onDelete(f)} style={{ marginRight: "auto" }}>Löschen</Btn>}
-          <Btn t={t} kind="ghost" onClick={onClose}>Schließen</Btn>
+          <Btn t={t} kind="ghost" onClick={requestClose}>Schließen</Btn>
           {canEdit && <Btn t={t} kind="primary" onClick={trySave}>{confirmConflict ? "Trotzdem speichern" : "Speichern"}</Btn>}
         </>
-      }>
+      )}>
 
       {readOnly && (
         <div style={{ background: "#FB8C0022", border: "1px solid #FB8C00", color: t.text, padding: "8px 11px", borderRadius: 9, fontSize: 13, marginBottom: 14 }}>

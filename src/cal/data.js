@@ -555,7 +555,7 @@ export function theme(mode) {
     mode: "light",
     navy: NAVY, navyDeep: NAVY_DEEP, accent: ACCENT,
     bg: "#EEF2F8", surface: "#FFFFFF", surface2: "#F4F7FC",
-    header: NAVY, text: "#152238", muted: "#5A6B86", faint: "#6B7794",
+    header: NAVY, text: "#152238", muted: "#5A6B86", faint: "#57647F",
     border: "#D9E1EE", borderSoft: "#E7EDF6",
     input: "#FFFFFF", chip: "#EEF2FA", shadow: "0 10px 30px rgba(20,40,80,.10)",
     todayBg: "rgba(46,91,255,.10)",

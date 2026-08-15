@@ -6,16 +6,16 @@ import { priorityById, timeToMin, occTimeLabel } from "./data.js";
 
 // --- Modal -------------------------------------------------------------
 export function Modal({ t, title, onClose, children, footer, wide, hasChanges }) {
-  // Klick auf den Hintergrund: bei ungespeicherten Eingaben erst nachfragen –
-  // sonst ist ein Fehltipp neben dem Dialog gleichbedeutend mit Datenverlust.
-  function onBackdrop() {
+  // Bei ungespeicherten Eingaben erst nachfragen – und zwar auf JEDEM Weg nach
+  // draussen: Hintergrundklick, "x" oben und der Schliessen-Knopf im Fuss.
+  function requestClose() {
     if (hasChanges && hasChanges()) {
       if (typeof window !== "undefined" && !window.confirm("Änderungen verwerfen?")) return;
     }
     onClose();
   }
   return (
-    <div onClick={onBackdrop} style={{
+    <div onClick={requestClose} style={{
       position: "fixed", inset: 0, background: "rgba(5,10,22,.62)", zIndex: 200,
       display: "flex", alignItems: "flex-start", justifyContent: "center",
       padding: "max(16px, env(safe-area-inset-top)) 12px 24px", overflowY: "auto",
@@ -30,17 +30,18 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
           padding: "14px 18px", background: t.navy, color: "#fff",
         }}>
           <div style={{ fontWeight: 800, fontSize: 16 }}>{title}</div>
-          <button onClick={onClose} aria-label="Schließen" style={{
+          <button onClick={requestClose} aria-label="Schließen" style={{
             background: "rgba(255,255,255,.12)", color: "#fff", border: "none",
-            borderRadius: 8, width: 30, height: 30, fontSize: 18, cursor: "pointer", lineHeight: 1,
+            borderRadius: 8, width: 44, height: 44, fontSize: 20, cursor: "pointer", lineHeight: 1,
+            display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none",
           }}>×</button>
         </div>
         <div style={{ padding: 18 }}>{children}</div>
-        {footer && (
+        {(typeof footer === "function" ? footer(requestClose) : footer) && (
           <div style={{
             padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: t.surface2,
             display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap",
-          }}>{footer}</div>
+          }}>{typeof footer === "function" ? footer(requestClose) : footer}</div>
         )}
       </div>
     </div>
@@ -123,17 +124,23 @@ export function Toast({ t, toast }) {
 // --- Suchtreffer anspringen -------------------------------------------
 // Scrollt zu dem Eintrag mit der ID und hebt ihn kurz hervor. Die Listen-Module
 // setzen dazu id={"hl-" + x.id} auf ihre Zeile.
-export function useHighlight(highlightId) {
+export function useHighlight(highlightId, onDone, notFoundMsg) {
   React.useEffect(() => {
     if (!highlightId) return;
-    const el = document.getElementById("hl-" + highlightId);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    const prev = el.style.boxShadow;
-    el.style.transition = "box-shadow .25s ease";
-    el.style.boxShadow = "0 0 0 3px #2E5BFF";
-    const tm = setTimeout(() => { el.style.boxShadow = prev; }, 2200);
-    return () => clearTimeout(tm);
+    // Ein Frame warten: das Modul setzt beim Öffnen ggf. noch Filter zurück,
+    // damit der Treffer überhaupt gerendert wird.
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById("hl-" + highlightId);
+      if (!el) { if (notFoundMsg) notFoundMsg(); if (onDone) onDone(); return; }
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const prev = el.style.boxShadow;
+      el.style.transition = "box-shadow .25s ease";
+      el.style.boxShadow = "0 0 0 3px #2E5BFF";
+      setTimeout(() => { el.style.boxShadow = prev; }, 2200);
+      // Freigeben, damit derselbe Treffer erneut angesprungen werden kann.
+      if (onDone) onDone();
+    });
+    return () => cancelAnimationFrame(raf);
   }, [highlightId]);
 }
 

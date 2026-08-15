@@ -31,8 +31,14 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
   const [fRubrik, setFRubrik] = useState("all");
   const [sort, setSort] = useState("new");
   const sel = inputStyle(t, true);
-  const ctrl = { ...sel, padding: "7px 9px", fontSize: 13 };
-  useHighlight(ctx.highlightId);
+  // 16px: sonst zoomt iOS beim Antippen hinein.
+  const ctrl = { ...sel, padding: "7px 9px" };
+  // Rubrik-/Level-Filter zuruecksetzen, sonst waere der Treffer ausgeblendet.
+  React.useEffect(() => {
+    if (!ctx.highlightId || !items.some((x) => x.id === ctx.highlightId)) return;
+    if (setFRubrik) setFRubrik("all");
+  }, [ctx.highlightId]);
+  useHighlight(ctx.highlightId, ctx.clearHighlight, () => ctx.flash && ctx.flash("Eintrag nicht mehr vorhanden.", "warn"));
 
   // Reihenfolge der Rubriken für die Sortierung "Nach Rubrik"
   const rubrikOrder = (id) => { const i = NTK_RUBRIKEN.findIndex((r) => r.id === (id || "")); return i < 0 ? 99 : i; };
