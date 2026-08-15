@@ -89,7 +89,16 @@ export function Gossip({ t, ctx, items, setItems }) {
     setCDraft((d) => ({ ...d, [id]: "" }));
   }
   function removeComment(id, cid) {
+    const parent = items.find((x) => x.id === id);
+    const gone = (parent?.comments || []).find((c) => c.id === cid);
     setItems(items.map((x) => (x.id === id ? { ...x, comments: (x.comments || []).filter((c) => c.id !== cid) } : x)));
+    // Bisher der einzige Loeschweg ganz ohne Rueckgaengig – jetzt mit.
+    if (gone && ctx.showUndo) {
+      ctx.showUndo("Kommentar gelöscht", () => setItems((cur) => cur.map((x) => (
+        x.id === id && !(x.comments || []).some((c) => c.id === cid)
+          ? { ...x, comments: [...(x.comments || []), gone] }
+          : x))));
+    }
   }
 
   return (
@@ -224,7 +233,11 @@ export function Gossip({ t, ctx, items, setItems }) {
                               : <span style={{ color: t.faint, flex: "none" }}>💬</span>}
                             <span style={{ flex: 1, minWidth: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.text}</span>
                             <button onClick={() => removeComment(x.id, c.id)} aria-label="Kommentar löschen"
-                              style={{ background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 15, flex: "none", lineHeight: 1 }}>×</button>
+                              style={{
+                                background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 19,
+                                flex: "none", lineHeight: 1, minWidth: 44, minHeight: 44, padding: 0,
+                                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              }}>×</button>
                           </div>
                         );
                       })}

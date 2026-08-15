@@ -161,24 +161,7 @@ function Root() {
   if (!session) return <Login supabase={supabase} notice={authNotice} />;
 
   // key = userId -> bei Anmeldung lädt App frisch aus der Cloud
-  return (
-    <div>
-      <App key={currentUserId} />
-      <button
-        onClick={() => { if (window.confirm("Wirklich abmelden?")) supabase.auth.signOut(); }}
-        style={{
-          position: "fixed", bottom: "calc(12px + env(safe-area-inset-bottom))",
-          right: "calc(12px + env(safe-area-inset-right))", zIndex: 50,
-          fontFamily: "Mulish, sans-serif", fontSize: 13, fontWeight: 700,
-          color: "rgba(255,255,255,.9)", background: "rgba(22,35,63,.85)",
-          border: "1px solid rgba(255,255,255,.22)", borderRadius: 10,
-          minHeight: 44, padding: "0 14px", cursor: "pointer",
-          backdropFilter: "blur(6px)", boxShadow: "0 4px 14px rgba(0,0,0,.25)",
-        }}>
-        Abmelden
-      </button>
-    </div>
-  );
+  return <App key={currentUserId} onSignOut={() => supabase.auth.signOut()} />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

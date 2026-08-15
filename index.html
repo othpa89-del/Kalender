@@ -57,6 +57,9 @@
       button { transition: opacity .12s ease; }
       @media (hover: hover) { button:hover:not(:disabled) { opacity: .82; } }
       button:active:not(:disabled) { opacity: .6; }
+      /* Sehr schmale Handys: Beschriftung weglassen, damit die Kopfzeilen-Buttons
+         nicht zusammengequetscht werden. */
+      @media (max-width: 400px) { .hdr-label { display: none; } }
       /* Monatsansicht auch am Handy gut treffbar (Balken/Tageszahlen groesser) */
       .cal-bars { grid-auto-rows: 22px !important; row-gap: 3px !important; }
       .cal-bar { line-height: 22px !important; font-size: 11px !important; border-radius: 5px !important; padding: 0 6px !important; }

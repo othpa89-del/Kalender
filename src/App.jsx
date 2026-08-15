@@ -80,7 +80,7 @@ function blankEvent(ctx) {
   };
 }
 
-export default function App() {
+export default function App({ onSignOut }) {
   const [users, setUsers] = useState(DEFAULT_USERS);
   const [areas, setAreas] = useState(DEFAULT_AREAS);
   const [types, setTypes] = useState(DEFAULT_EVENT_TYPES);
@@ -133,6 +133,15 @@ export default function App() {
   const t = theme(settings.themeMode);
   activeUserIdRef.current = settings.activeUserId;
   usersRef.current = users;
+
+  // Body-Hintergrund an das Theme koppeln: .app-root deckt wegen zoom: 0.9 nur
+  // ~90% der Hoehe ab – sonst steht im Hellmodus unten ein dunkler Balken und
+  // beim iOS-Gummiband-Scrollen blitzt die falsche Farbe auf.
+  useEffect(() => {
+    document.body.style.background = t.bg;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", t.navy);
+  }, [t.bg, t.navy]);
 
   const flash = useCallback((msg, kind = "info") => {
     setToast({ msg, kind });
@@ -637,7 +646,7 @@ export default function App() {
             <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
               {/* aktiver Benutzer (Ersteller neuer Einträge) */}
-              <span style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.7)", whiteSpace: "nowrap" }}>Angemeldet als</span>
+              <span className="hdr-label" style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.7)", whiteSpace: "nowrap" }}>Angemeldet als</span>
               <select value={settings.activeUserId} onChange={(e) => persist.settings({ ...settings, activeUserId: e.target.value })}
                 title="Aktiver Benutzer" style={{
                   background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)",
@@ -678,7 +687,7 @@ export default function App() {
               {VIEW_TABS.map((v) => (
                 <button key={v.id} onClick={() => changeView(v.id)} style={{
                   border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                  padding: "7px 13px", fontSize: 13.5, fontWeight: 700,
+                  padding: "0 14px", minHeight: 44, fontSize: 13.5, fontWeight: 700,
                   background: view === v.id ? "#fff" : "rgba(255,255,255,.10)",
                   color: view === v.id ? t.navy : "#fff",
                 }}>{v.label}</button>
@@ -841,6 +850,21 @@ export default function App() {
       )}
 
       {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 110 }} />}
+
+      {/* Abmelden: liegt INNERHALB von .app-root, damit es sich korrekt hinter
+          Dialogen/Meldungen einordnet, und ist bei offenem Dialog ausgeblendet. */}
+      {onSignOut && !editor && !adminOpen && !confirmDel && (
+        <button onClick={() => { if (window.confirm("Wirklich abmelden?")) onSignOut(); }}
+          style={{
+            position: "fixed", bottom: "calc(12px + env(safe-area-inset-bottom))",
+            right: "calc(12px + env(safe-area-inset-right))", zIndex: 50,
+            fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+            color: t.muted, background: t.surface,
+            border: `1px solid ${t.border}`, borderRadius: 10,
+            minHeight: 44, padding: "0 14px", cursor: "pointer",
+            boxShadow: "0 4px 14px rgba(0,0,0,.18)",
+          }}>Abmelden</button>
+      )}
     </div>
   );
 }
@@ -848,7 +872,8 @@ export default function App() {
 const FONT = "Mulish, system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
 const hBtn = {
   background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)",
-  borderRadius: 8, width: 34, height: 34, fontSize: 16, cursor: "pointer", lineHeight: 1,
+  borderRadius: 9, width: 44, height: 44, fontSize: 17, cursor: "pointer", lineHeight: 1,
+  flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
 };
 const menuItem = (t) => ({
   display: "block", width: "100%", textAlign: "left", background: "none", border: "none",

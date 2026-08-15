@@ -83,6 +83,9 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
   }
   function removeList(id) {
     if (lists.length <= 1) { if (ctx.flash) ctx.flash("Mindestens eine Liste muss bleiben.", "warn"); return; }
+    const target = lists.find((l) => l.id === id);
+    if (typeof window !== "undefined" &&
+      !window.confirm(`Liste „${target ? target.name : ""}" löschen? Die Artikel werden verschoben.`)) return;
     const remaining = lists.filter((l) => l.id !== id);
     // Ziel-Liste deterministisch wählen: bevorzugt „Allgemein", sonst alphabetisch erste.
     const fallback = (remaining.find((l) => (l.name || "").trim().toLowerCase() === "allgemein")
@@ -108,7 +111,12 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
     }
     setFavText("");
   }
-  function removeFav(id) { setFavs(favs.filter((f) => f.id !== id)); }
+  function removeFav(id) {
+    const target = favs.find((f) => f.id === id);
+    if (typeof window !== "undefined" &&
+      !window.confirm(`„${target ? target.text : ""}" aus den häufigen Artikeln entfernen?`)) return;
+    setFavs(favs.filter((f) => f.id !== id));
+  }
 
   function addItem(name, catId = "") {
     const v = (name || "").trim();
@@ -146,8 +154,12 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
     }
   }
   function clearAll() {
-    if (typeof window !== "undefined" && !window.confirm("Diese Liste leeren?")) return;
-    setItems(items.filter((x) => !inActive(x)));
+    const removed = items.filter(inActive);
+    if (!removed.length) return;
+    if (typeof window !== "undefined" && !window.confirm(`Diese Liste leeren? (${removed.length} Artikel)`)) return;
+    // Auch hier Undo anbieten – es wird am meisten geloescht.
+    if (ctx.deleteManyWithUndo) ctx.deleteManyWithUndo("shopping", removed, `Liste geleert (${removed.length})`);
+    else setItems(items.filter((x) => !inActive(x)));
   }
   function startEdit(x) { setEditId(x.id); setEditText(x.text); }
   function commitEdit() {
@@ -202,7 +214,8 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
                   background: "none", border: "none", color: t.text, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, padding: 0,
                 }}>{l.name} ✏️</button>
                 <button onClick={() => removeList(l.id)} aria-label="Liste löschen" style={{
-                  background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 3px",
+                  background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, lineHeight: 1,
+                  minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
                 }}>×</button>
               </span>
             )
@@ -251,7 +264,8 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
             }}>
               {fc && <span title={fc.name}>{fc.icon}</span>} {f.text}
               <button onClick={() => removeFav(f.id)} aria-label="Entfernen" style={{
-                background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "0 2px",
+                background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, lineHeight: 1,
+                minWidth: 44, minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
               }}>×</button>
             </span>
           ) : (

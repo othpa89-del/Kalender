@@ -87,7 +87,7 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
         {(mode === "signin" || mode === "signup") && (
           <label style={S.remember}>
             <input type="checkbox" checked={remember} onChange={(e) => toggleRemember(e.target.checked)}
-              style={{ width: 16, height: 16, margin: 0, accentColor: "#2E5BFF" }} />
+              style={{ width: 20, height: 20, margin: 0, accentColor: "#2E5BFF" }} />
             Angemeldet bleiben
           </label>
         )}
@@ -128,8 +128,9 @@ const S = {
   sub: { fontSize: 13, color: "#9DB0CE", marginBottom: 6, marginTop: -6 },
   inp: { padding: "11px 12px", border: "1px solid #2A3C5E", borderRadius: 8, fontSize: 16, fontFamily: "inherit", background: "#0F1C33", color: "#E8EDF6" },
   btn: { padding: "11px 12px", background: "#2E5BFF", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" },
-  remember: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#9DB0CE", fontWeight: 600, cursor: "pointer", marginTop: 2 },
-  link: { background: "none", border: "none", color: "#7FA0FF", fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 4 },
+  remember: { display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#9DB0CE", fontWeight: 600, cursor: "pointer", marginTop: 2, minHeight: 44 },
+  link: { background: "none", border: "none", color: "#7FA0FF", fontSize: 14, fontWeight: 600, cursor: "pointer",
+    padding: "10px 2px", minHeight: 44, alignSelf: "flex-start", textAlign: "left" },
   err: { color: "#FF6B6B", fontSize: 13, fontWeight: 600 },
   msg: { color: "#5BD68A", fontSize: 13, fontWeight: 600 },
 };
