@@ -297,11 +297,17 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 
   const cols = "20px repeat(7,1fr)";
   const weekendTint = t.mode === "dark" ? "rgba(229,115,154,.10)" : "rgba(229,115,154,.08)";
+  // KW-Spalte dezent grau hinterlegen, damit sie sich von den Tagen abhebt.
+  const kwTint = t.mode === "dark" ? "rgba(255,255,255,.055)" : "rgba(21,34,56,.055)";
   return (
     <div>
       {/* Wochentagskopf */}
       <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, marginBottom: 2 }}>
-        <div style={{ textAlign: "center", fontSize: 8.5, fontWeight: 800, color: t.faint, alignSelf: "center" }}>KW</div>
+        <div style={{
+          textAlign: "center", fontSize: 8.5, fontWeight: 800, color: t.muted,
+          background: kwTint, borderRadius: 4, alignSelf: "stretch",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>KW</div>
         {WEEKDAYS.map((w, i) => (
           <div key={w} style={{ textAlign: "center", fontSize: 10, fontWeight: 800, color: i >= 5 ? "#E5739A" : t.muted }}>{w}</div>
         ))}
