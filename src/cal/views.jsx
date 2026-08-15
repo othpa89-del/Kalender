@@ -334,10 +334,16 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 return <div key={di} style={{ background: wd >= 5 ? weekendTint : "transparent", borderRadius: 4 }} />;
               })}
             </div>
+            {/* KW-Zahl: ueber die volle Hoehe der Wochenzeile mittig */}
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0, width: 20, zIndex: 2,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, color: t.muted, pointerEvents: "none",
+            }}>{isoWeek(toISODate(weekDays[0]))}</div>
             <div style={{ position: "relative", zIndex: 1 }}>
-            {/* Tageszahlen + KW */}
+            {/* Tageszahlen */}
             <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, alignItems: "center" }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: t.faint, textAlign: "center" }}>{isoWeek(toISODate(weekDays[0]))}</div>
+              <div />{/* KW-Zahl wird darueber mittig ueber die ganze Wochenhoehe gesetzt */}
               {weekDays.map((d) => {
                 const iso = toISODate(d); const inMonth = d.getMonth() === month; const isToday = iso === today; const wd = (d.getDay() + 6) % 7;
                 return (
