@@ -298,14 +298,21 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const cols = "20px repeat(7,1fr)";
   const weekendTint = t.mode === "dark" ? "rgba(229,115,154,.10)" : "rgba(229,115,154,.08)";
   // KW-Spalte dezent grau hinterlegen, damit sie sich von den Tagen abhebt.
-  const kwTint = t.mode === "dark" ? "rgba(255,255,255,.055)" : "rgba(21,34,56,.055)";
+  const kwTint = t.mode === "dark" ? "rgba(255,255,255,.09)" : "rgba(21,34,56,.085)";
   return (
     <div>
+      {/* Die KW-Spalte wird als EIN durchgehender Streifen hinterlegt (nicht je
+          Woche einzeln), damit sie als zusammenhaengende Spalte wirkt. */}
+      <div style={{ position: "relative" }}>
+        <div aria-hidden style={{
+          position: "absolute", left: 0, top: 0, bottom: 0, width: 20,
+          background: kwTint, borderRadius: 6, pointerEvents: "none",
+        }} />
       {/* Wochentagskopf */}
       <div style={{ display: "grid", gridTemplateColumns: cols, gap: 3, marginBottom: 2 }}>
         <div style={{
           textAlign: "center", fontSize: 8.5, fontWeight: 800, color: t.muted,
-          background: kwTint, borderRadius: 4, alignSelf: "stretch",
+          alignSelf: "stretch", position: "relative",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>KW</div>
         {WEEKDAYS.map((w, i) => (
@@ -381,6 +388,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
           </div>
         );
       })}
+      </div>
       <div style={{ marginTop: 8, fontSize: 11, color: t.faint, textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 4, flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
