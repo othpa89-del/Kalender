@@ -241,12 +241,29 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 }
 
 // ---------------------------------------------------------------------
-//  MONATSANSICHT – Übersicht mit Balken (einheitliche Farbe) und Termin-Icon,
+//  MONATSANSICHT – Übersicht mit farbcodierten Balken und Termin-Icon,
 //  mehrtägige Termine als durchgehender Balken. Kein Detail, nur Überblick.
 //  Tippen auf Balken: Termin öffnen. Tippen auf Tageszahl: Tagesansicht.
 // ---------------------------------------------------------------------
 const MONTH_MAX_LANES = 4;
-const ALLDAY_COLOR = "#2FA36B"; // Ganztägig/mehrtägig = Grün (hebt sich vom Blau ab)
+// Farbschema der Monatsbalken (Kontrast zu weißer Schrift jeweils geprüft):
+const FLIGHT_COLOR = "#C2185B"; // Eurowings & Flug = Magenta
+const ALLDAY_COLOR = "#2FA36B"; // Ganztägig/mehrtägig = Grün
+const OTHER_COLOR  = "#64748B"; // alles Übrige = Grau
+// AAA verwendet weiterhin die Akzentfarbe (Blau) aus dem Theme.
+
+// Emoji ohne Variationsselektor – "\u2708\uFE0F" und "\u2708" sollen gleich zählen.
+function baseIcon(s) { return String(s || "").replace(/\uFE0F/g, ""); }
+
+// Reihenfolge ist bewusst: Eurowings/Flug schlägt AAA, AAA schlägt Ganztägig.
+export function monthBarColor(ev, t) {
+  const icon = baseIcon(ev.icon);
+  const title = String(ev.title || "");
+  if (icon === "\u{1F6E9}" || icon === "\u2708" || /\b(eurowings|flug)\b/i.test(title)) return FLIGHT_COLOR;
+  if (icon === "\u{1F3E2}" || /\bAAA\b/.test(title)) return t.accent;
+  if (ev.allDay || (ev._span || 1) > 1) return ALLDAY_COLOR;
+  return OTHER_COLOR;
+}
 
 export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const cur = parseISODate(dateISO);
@@ -362,12 +379,11 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
             {/* Balken */}
             <div className="cal-bars" style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 15, gap: 2, padding: "2px 0 1px" }}>
               {placed.map((p, i) => {
-                // Ganztägige & mehrtägige Termine grün, Termine mit Uhrzeit blau.
-                // WICHTIG: die echte Termindauer (_span) verwenden – p.span ist nur
-                // die Länge des Balkens INNERHALB dieser Woche. Sonst bekäme ein
+                // Farbe nach Kategorie (Flug/AAA/Ganztägig/Sonstiges).
+                // WICHTIG: monthBarColor nutzt die echte Termindauer (_span) – p.span ist
+                // nur die Länge des Balkens INNERHALB dieser Woche. Sonst bekäme ein
                 // über den Wochenwechsel laufender Termin zwei verschiedene Farben.
-                const isAllDay = p.ev.allDay || (p.ev._span || 1) > 1;
-                const bg = isAllDay ? ALLDAY_COLOR : t.accent;
+                const bg = monthBarColor(p.ev, t);
                 const type = ctx.typeById(p.ev.typeId);
                 // Emoji = wie in der Schnellanlage gewählt (ev.icon), sonst Terminart-Icon
                 const icon = p.ev.icon || (type && type.icon) || "📌";
@@ -398,10 +414,16 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
       <div style={{ marginTop: 8, fontSize: 11, color: t.faint, textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 4, flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: ALLDAY_COLOR, display: "inline-block" }} />Ganztägig/mehrtägig
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: FLIGHT_COLOR, display: "inline-block" }} />Eurowings/Flug
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: t.accent, display: "inline-block" }} />mit Uhrzeit
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: t.accent, display: "inline-block" }} />AAA
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: ALLDAY_COLOR, display: "inline-block" }} />Ganztägig
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 11, height: 11, borderRadius: 3, background: OTHER_COLOR, display: "inline-block" }} />Sonstiges
           </span>
         </div>
         Balken antippen = Termin · Tageszahl antippen = Tagesansicht
