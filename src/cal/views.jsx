@@ -561,7 +561,7 @@ function uniqueOcc(list) {
 const WORK_MEMORY_MS = 30 * 60 * 1000;
 let workMemory = null;
 
-export function WorkView({ t, ctx, events, onSelect, onPickDay, initialMode = "week" }) {
+export function WorkView({ t, ctx, events, onSelect, onPickDay, onImport, initialMode = "week" }) {
   const today = todayISO();
   const [mem] = React.useState(() =>
     (workMemory && Date.now() - workMemory.ts < WORK_MEMORY_MS ? workMemory : null));
@@ -716,6 +716,12 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay, initialMode = "w
       {mode === "week" && <WeekView t={t} ctx={ctx} dateISO={wsISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
       {mode === "month" && <MonthView t={t} ctx={ctx} dateISO={msISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
       {mode === "list" && <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} catLabel={catInfo && catInfo.label} onSelect={onSelect} />}
+
+      {onImport && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+          <Btn t={t} kind="soft" onClick={onImport}>📥 Dienstplan importieren (ICS)</Btn>
+        </div>
+      )}
     </div>
   );
 }

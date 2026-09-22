@@ -17,6 +17,7 @@ import { Tasks } from "./cal/Tasks.jsx";
 import { Shopping } from "./cal/Shopping.jsx";
 import { NiceToKnow } from "./cal/NiceToKnow.jsx";
 import { Gossip } from "./cal/Gossip.jsx";
+import { RosterImport } from "./cal/RosterImport.jsx";
 
 // ---- persistente Schlüssel ----------------------------------------------
 // Konfiguration als einzelne Blobs (selten/parallel kaum bearbeitet):
@@ -108,6 +109,7 @@ export default function App({ onSignOut }) {
 
   const [editor, setEditor] = useState(null); // {draft, isNew}
   const [adminOpen, setAdminOpen] = useState(false);
+  const [rosterOpen, setRosterOpen] = useState(false); // Dienstplan-Import (ICS)
   const [menuOpen, setMenuOpen] = useState(false);
   const [highlightId, setHighlightId] = useState(null); // Suchtreffer hervorheben
   const [confirmDel, setConfirmDel] = useState(null);
@@ -700,6 +702,7 @@ export default function App({ onSignOut }) {
                       ["🔔 Benachrichtigungen aktivieren", requestNotifications],
                       ["📤 Export ICS (Outlook/Google/Apple)", exportICS],
                       ["💾 JSON-Backup", exportJSON],
+                      ["🗓️ Dienstplan importieren (ICS)", () => { setMenuOpen(false); setRosterOpen(true); }],
                       ["📥 Backup wiederherstellen", () => { setMenuOpen(false); fileInputRef.current?.click(); }],
                       ...(onSignOut ? [["🚪 Abmelden", () => { setMenuOpen(false); if (window.confirm("Wirklich abmelden?")) onSignOut(); }]] : []),
                     ].map(([label, fn]) => (
@@ -823,7 +826,7 @@ export default function App({ onSignOut }) {
         {!searching && view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
         {!searching && view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
         {!searching && view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
-        {!searching && view === "work" && <WorkView t={t} ctx={ctx} events={filteredEvents} onSelect={openEvent}
+        {!searching && view === "work" && <WorkView t={t} ctx={ctx} events={filteredEvents} onSelect={openEvent} onImport={() => setRosterOpen(true)}
           onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
 
         {/* ===== Copyright (dezent, erscheint auch beim Drucken/PDF) ===== */}
@@ -853,6 +856,17 @@ export default function App({ onSignOut }) {
           canEdit={canEditEvent(editor.draft)} onSave={saveEvent} onDelete={deleteEvent} onClose={() => setEditor(null)} />
       )}
       {adminOpen && <Admin t={t} ctx={ctx} onClose={() => setAdminOpen(false)} />}
+      {rosterOpen && (
+        <RosterImport t={t} events={events} areas={areas} onClose={() => setRosterOpen(false)}
+          blank={() => blankEvent({ areas, types, users, activeUserId: settings.activeUserId })}
+          onApply={(next, n) => {
+            const prev = eventsRef.current;
+            persist.events(next);
+            setRosterOpen(false);
+            const parts = [n.neu && `${n.neu} neu`, n.geaendert && `${n.geaendert} aktualisiert`, n.entfaellt && `${n.entfaellt} entfernt`].filter(Boolean);
+            showUndo(`Dienstplan: ${parts.join(", ") || "keine Änderungen"}`, () => persist.events(prev));
+          }} />
+      )}
       {confirmDel && (
         <div onClick={() => setConfirmDel(null)} style={{ position: "fixed", inset: 0, background: "rgba(5,10,22,.62)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: t.surface, color: t.text, borderRadius: 14, border: `1px solid ${t.border}`, padding: 22, maxWidth: 360, width: "100%", boxShadow: t.shadow }}>
