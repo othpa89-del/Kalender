@@ -5,8 +5,11 @@
 // ===========================================================================
 import React, { useMemo, useRef, useState } from "react";
 import { Modal, Btn, inputStyle } from "./components.jsx";
-import { WEEKDAYS, parseISODate, todayISO, uid, WORK_CATEGORIES, workCategoryOf } from "./data.js";
-import { parseICS, rosterCategory, isOffDay, categoryById } from "./ics.js";
+import { WEEKDAYS, parseISODate, todayISO, uid, WORK_CATEGORIES } from "./data.js";
+import { parseICS, isOffDay, categoryById } from "./ics.js";
+
+// Dienstplan-Einträge werden immer als Eurowings übernommen.
+const ROSTER_CAT = "eurowings";
 
 const STATUS = {
   neu: { label: "neu", color: "#2FA36B" },
@@ -81,14 +84,12 @@ export function RosterImport({ t, events, areas, blank, onApply, onClose }) {
       let status;
       if (e.cancelled) { if (!existing) return; status = "entfaellt"; }
       else status = !existing ? "neu" : sameCore(existing, e) ? "gleich" : "geaendert";
-      // Nicht erkannt, aber schon im Kalender? Dann dessen Kategorie übernehmen.
-      const known = existing && workCategoryOf(existing);
-      const cat = rosterCategory(e) || (known ? known.id : "");
+      const cat = ROSTER_CAT;
       const off = isOffDay(e);
       out.push({
         key, entry: e, existing, status, cat,
-        // Vorauswahl: Neues/Geändertes/Entfallenes, sofern als Dienst erkannt
-        selected: status !== "gleich" && (status === "entfaellt" || (!!cat && !off)),
+        // Vorauswahl: alles Neue/Geänderte/Entfallene – außer freien Tagen (OFF/Frei/Urlaub)
+        selected: status !== "gleich" && (status === "entfaellt" || !off),
       });
     });
     return out;
@@ -167,8 +168,8 @@ export function RosterImport({ t, events, areas, blank, onApply, onClose }) {
       {!rows && !error && (
         <div style={{ fontSize: 13.5, color: t.muted, lineHeight: 1.5 }}>
           Exportiere deinen Dienstplan aus der Crew-App oder aus Outlook als <b>.ics</b>-Datei
-          (oder schick ihn dir per Mail und sichere den Anhang in „Dateien“). Die Einträge werden
-          automatisch als <b>Eurowings</b>, <b>Flug</b> oder <b>Simulator</b> erkannt – du siehst vor dem
+          (oder schick ihn dir per Mail und sichere den Anhang in „Dateien“). Alle Einträge werden
+          als <b>Eurowings</b> übernommen – freie Tage (OFF/Frei/Urlaub) sind abgewählt. Du siehst vor dem
           Übernehmen eine Vorschau. Ein erneuter Import aktualisiert geänderte Dienste, statt sie doppelt anzulegen.
         </div>
       )}

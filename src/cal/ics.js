@@ -2,7 +2,7 @@
 //  ics.js – ICS-Dateien einlesen (Dienstplan-Import)
 //  Reine Hilfsfunktionen (kein JSX). Liefert Termine in lokaler Gerätezeit.
 // ===========================================================================
-import { pad2, toISODate, parseISODate, addDays, WORK_CATEGORIES, workCategoryOf } from "./data.js";
+import { pad2, toISODate, parseISODate, addDays, WORK_CATEGORIES } from "./data.js";
 
 // --- Zeilen & Eigenschaften -------------------------------------------
 // Gefaltete Zeilen (Fortsetzung beginnt mit Leerzeichen/Tab) zusammenführen.
@@ -152,23 +152,10 @@ function buildEntry(props) {
   };
 }
 
-// --- Dienstplan-Kategorien --------------------------------------------------
-// Zuerst die normalen Regeln (Titel-Wörter), dann typische Crew-Kürzel.
-const SIM_RE = /\b(SIM|FFS|FTD|LPC|OPC|LOFT|ZFTT|SIMULATOR)\b/i;
-const EW_RE = /\b(eurowings|EW[GLE]?\s?\d{2,4}|4U\s?\d{2,4})\b/i;
-const FLIGHT_RE = /\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?\d{2,4}[A-Z]?\b|\b[A-Z]{3}\s?(?:-|–|>|\/)\s?[A-Z]{3}\b|\b(DH|DHD|deadhead)\b/;
+// --- Dienstplan -------------------------------------------------------------
 // Tage ohne Dienst – standardmäßig nicht importieren
 const OFF_RE = /^\s*(OFF|FREI|FREE|X|RDO|VAC|URLAUB)\b/i;
 
-export function rosterCategory(entry) {
-  const text = `${entry.title} ${entry.description || ""}`;
-  const direct = workCategoryOf({ title: entry.title });
-  if (direct) return direct.id;
-  if (SIM_RE.test(text)) return "simulator";
-  if (EW_RE.test(text)) return "eurowings";
-  if (FLIGHT_RE.test(entry.title)) return "flug";
-  return null;
-}
 export function isOffDay(entry) { return OFF_RE.test(entry.title); }
 
 export function categoryById(id) { return WORK_CATEGORIES.find((c) => c.id === id) || null; }
