@@ -123,6 +123,28 @@ export const QUICK_TEMPLATES = [
   { id: "q_urlaub", label: "Urlaub", icon: "🌴" },
 ];
 
+// Arbeits-Kategorien für den Tab „Arbeit". Zuordnung primär über das in der
+// Schnellanlage gesetzte Emoji, sonst über ein ganzes Wort im Titel
+// (so zählen z. B. „Ausflug" oder „Flughafen" NICHT als Flug).
+export const WORK_CATEGORIES = [
+  { id: "aaa", label: "AAA", icon: "🏢", re: /\bAAA\b/ },
+  { id: "eurowings", label: "Eurowings", icon: "🛩️", re: /\beurowings\b/i },
+  { id: "flug", label: "Flug", icon: "✈️", re: /\bflug\b/i },
+  { id: "meeting", label: "Meeting", icon: "👥", re: /\bmeeting\b/i },
+  { id: "simulator", label: "Simulator", icon: "🛫", re: /\b(simulator|sim)\b/i },
+];
+const noVS = (s) => String(s || "").replace(/\uFE0F/g, "");
+export function workCategoryOf(ev) {
+  if (!ev) return null;
+  const icon = noVS(ev.icon);
+  if (icon) {
+    const byIcon = WORK_CATEGORIES.find((c) => noVS(c.icon) === icon);
+    if (byIcon) return byIcon;
+  }
+  const title = String(ev.title || "");
+  return WORK_CATEGORIES.find((c) => c.re.test(title)) || null;
+}
+
 // =====================================================================
 //  Datums-Hilfsfunktionen  (lokale Zeit, Strings "YYYY-MM-DD" / "HH:MM")
 // =====================================================================

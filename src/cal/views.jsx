@@ -6,6 +6,7 @@ import {
   WEEKDAYS, WEEKDAYS_LONG,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
+  MONTHS, occurrencesInRange, WORK_CATEGORIES, workCategoryOf,
 } from "./data.js";
 import { EventChip, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
 
@@ -533,6 +534,107 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
 
       <Section t={t} ctx={ctx} onSelect={onSelect} title="Heute" items={todays} empty="Heute keine Termine." badge={todays.length} />
       <Section t={t} ctx={ctx} onSelect={onSelect} title="Morgen" items={tomorrows} empty="Morgen keine Termine." badge={tomorrows.length} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+//  ARBEIT – alle Termine der Kategorien AAA, Eurowings, Flug, Meeting und
+//  Simulator automatisch gesammelt, nach Monat gruppiert.
+// ---------------------------------------------------------------------
+const WORK_RANGE_DAYS = 365;
+
+export function WorkView({ t, ctx, events, onSelect }) {
+  const [cat, setCat] = React.useState("all");
+  const [past, setPast] = React.useState(false);
+  const today = todayISO();
+
+  const occs = React.useMemo(() => {
+    const work = events.filter((e) => workCategoryOf(e));
+    const base = parseISODate(today);
+    const from = past ? toISODate(addDays(base, -WORK_RANGE_DAYS)) : today;
+    const to = past ? toISODate(addDays(base, -1)) : toISODate(addDays(base, WORK_RANGE_DAYS));
+    // Mehrtägige Termine liefert occurrencesInRange je Tag – hier nur EINMAL zeigen.
+    const seen = new Set(), out = [];
+    for (const o of occurrencesInRange(work, from, to)) {
+      const k = o.id + "_" + o._occStart;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push({ ...o, _cat: workCategoryOf(o).id });
+    }
+    return past ? out.reverse() : out; // Vergangene: neueste zuerst
+  }, [events, past, today]);
+
+  const counts = {};
+  for (const o of occs) counts[o._cat] = (counts[o._cat] || 0) + 1;
+  const shown = cat === "all" ? occs : occs.filter((o) => o._cat === cat);
+
+  // Nach Monat gruppieren (Reihenfolge bleibt erhalten)
+  const groups = [];
+  for (const o of shown) {
+    const key = o.date.slice(0, 7);
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) { g = { key, items: [] }; groups.push(g); }
+    g.items.push(o);
+  }
+
+  const chip = (active) => ({
+    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 40, padding: "0 12px",
+    borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+    whiteSpace: "nowrap", border: `1px solid ${active ? t.accent : t.border}`,
+    background: active ? t.accent : t.surface, color: active ? "#fff" : t.text,
+  });
+  const countBadge = (n, active) => (
+    <span style={{ fontSize: 11, fontWeight: 800, opacity: active ? 0.9 : 0.6 }}>{n || 0}</span>
+  );
+
+  return (
+    <div>
+      {/* Kommend / Vergangen */}
+      <div style={{ display: "inline-flex", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 3, marginBottom: 10 }}>
+        {[[false, "Kommend"], [true, "Vergangen"]].map(([val, label]) => (
+          <button key={label} onClick={() => setPast(val)} style={{
+            border: "none", borderRadius: 8, minHeight: 36, padding: "0 14px", cursor: "pointer",
+            fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+            background: past === val ? t.accent : "transparent", color: past === val ? "#fff" : t.muted,
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {/* Kategorien */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+        <button onClick={() => setCat("all")} style={chip(cat === "all")}>Alle {countBadge(occs.length, cat === "all")}</button>
+        {WORK_CATEGORIES.map((c) => (
+          <button key={c.id} onClick={() => setCat(c.id)} style={chip(cat === c.id)}>
+            <span style={{ fontWeight: 400 }}>{c.icon}</span>{c.label} {countBadge(counts[c.id], cat === c.id)}
+          </button>
+        ))}
+      </div>
+
+      {groups.length === 0 ? (
+        <Empty t={t} text={past ? "Keine vergangenen Arbeitstermine im letzten Jahr." : "Keine kommenden Arbeitstermine."} />
+      ) : groups.map((g) => {
+        const [y, m] = g.key.split("-").map(Number);
+        return (
+          <div key={g.key} style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>{MONTHS[m - 1]} {y}</h3>
+              <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({g.items.length})</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {g.items.map((ev) => (
+                <div key={ev.id + "_" + ev._occStart} style={{ position: "relative" }}>
+                  {ev.date === today && (
+                    <span style={{ position: "absolute", top: -6, right: 8, zIndex: 1, background: t.accent, color: "#fff",
+                      fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "1px 6px" }}>HEUTE</span>
+                  )}
+                  <EventChip t={t} ev={ev} ctx={ctx} onClick={() => onSelect(ev)} showDate />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

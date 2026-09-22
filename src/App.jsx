@@ -10,7 +10,7 @@ import {
   fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
 import { Toast, Btn, Dot } from "./cal/components.jsx";
-import { DayView, WeekView, MonthView, Dashboard } from "./cal/views.jsx";
+import { DayView, WeekView, MonthView, Dashboard, WorkView } from "./cal/views.jsx";
 import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
 import { Tasks } from "./cal/Tasks.jsx";
@@ -95,7 +95,7 @@ export default function App({ onSignOut }) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
-  const [view, setView] = useState("dashboard"); // dashboard|day|week|month|tasks|shopping|notes|gossip
+  const [view, setView] = useState("dashboard"); // dashboard|day|week|month|tasks|shopping|notes|gossip|work
   const [cursor, setCursor] = useState(todayISO());
 
   const [search, setSearch] = useState("");
@@ -604,6 +604,7 @@ export default function App({ onSignOut }) {
     { id: "shopping", label: "Einkauf" },
     { id: "notes", label: "Nice to know" },
     { id: "gossip", label: "Gossip" },
+    { id: "work", label: "Arbeit" },
   ];
   // Anzahl aktiver Filter – sonst fehlen Termine scheinbar grundlos, wenn das
   // Filter-Panel zugeklappt ist.
@@ -789,6 +790,7 @@ export default function App({ onSignOut }) {
         {!searching && view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
         {!searching && view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
         {!searching && view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
+        {!searching && view === "work" && <WorkView t={t} ctx={ctx} events={filteredEvents} onSelect={openEvent} />}
 
         {/* ===== Copyright (dezent, erscheint auch beim Drucken/PDF) ===== */}
         <div className="app-copyright" style={{
