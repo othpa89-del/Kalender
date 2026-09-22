@@ -543,41 +543,60 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
 //  Simulator automatisch gesammelt, nach Monat gruppiert.
 // ---------------------------------------------------------------------
 const WORK_RANGE_DAYS = 365;
+const WORK_MODE_KEY = "ctc_work_mode"; // zuletzt gewählte Ansicht (Liste/Woche) je Gerät
 
-export function WorkView({ t, ctx, events, onSelect }) {
+// Mehrtägige Termine liefert occurrencesInRange je Tag – für Listen/Zähler nur EINMAL.
+function uniqueOcc(list) {
+  const seen = new Set(), out = [];
+  for (const o of list) {
+    const k = o.id + "_" + o._occStart;
+    if (!seen.has(k)) { seen.add(k); out.push(o); }
+  }
+  return out;
+}
+
+export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
+  const [mode, setModeState] = React.useState(() => {
+    try { return window.localStorage.getItem(WORK_MODE_KEY) === "week" ? "week" : "list"; } catch { return "list"; }
+  });
+  const setMode = (m) => { setModeState(m); try { window.localStorage.setItem(WORK_MODE_KEY, m); } catch {} };
   const [cat, setCat] = React.useState("all");
   const [past, setPast] = React.useState(false);
   const today = todayISO();
+  const [weekISO, setWeekISO] = React.useState(today);
 
-  const occs = React.useMemo(() => {
-    const work = events.filter((e) => workCategoryOf(e));
+  const work = React.useMemo(
+    () => events.filter((e) => workCategoryOf(e)).map((e) => ({ ...e, _cat: workCategoryOf(e).id })),
+    [events]);
+
+  // Liste: kommende bzw. vergangene 12 Monate
+  const listOcc = React.useMemo(() => {
+    if (mode !== "list") return [];
     const base = parseISODate(today);
     const from = past ? toISODate(addDays(base, -WORK_RANGE_DAYS)) : today;
     const to = past ? toISODate(addDays(base, -1)) : toISODate(addDays(base, WORK_RANGE_DAYS));
-    // Mehrtägige Termine liefert occurrencesInRange je Tag – hier nur EINMAL zeigen.
-    const seen = new Set(), out = [];
-    for (const o of occurrencesInRange(work, from, to)) {
-      const k = o.id + "_" + o._occStart;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push({ ...o, _cat: workCategoryOf(o).id });
-    }
+    const out = uniqueOcc(occurrencesInRange(work, from, to));
     return past ? out.reverse() : out; // Vergangene: neueste zuerst
-  }, [events, past, today]);
+  }, [work, mode, past, today]);
 
+  // Woche: Mo–So der gewählten Woche (mehrtägige Termine an jedem Tag)
+  const ws = startOfWeek(parseISODate(weekISO));
+  const wsISO = toISODate(ws), weISO = toISODate(addDays(ws, 6));
+  const weekOcc = React.useMemo(
+    () => (mode === "week" ? occurrencesInRange(work, wsISO, weISO) : []),
+    [work, mode, wsISO, weISO]);
+
+  const base = mode === "week" ? uniqueOcc(weekOcc) : listOcc;
   const counts = {};
-  for (const o of occs) counts[o._cat] = (counts[o._cat] || 0) + 1;
-  const shown = cat === "all" ? occs : occs.filter((o) => o._cat === cat);
+  for (const o of base) counts[o._cat] = (counts[o._cat] || 0) + 1;
+  const byCat = (o) => cat === "all" || o._cat === cat;
 
-  // Nach Monat gruppieren (Reihenfolge bleibt erhalten)
-  const groups = [];
-  for (const o of shown) {
-    const key = o.date.slice(0, 7);
-    let g = groups[groups.length - 1];
-    if (!g || g.key !== key) { g = { key, items: [] }; groups.push(g); }
-    g.items.push(o);
-  }
-
+  const seg = (active) => ({
+    border: "none", borderRadius: 8, minHeight: 36, padding: "0 14px", cursor: "pointer",
+    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+    background: active ? t.accent : "transparent", color: active ? "#fff" : t.muted,
+  });
+  const segWrap = { display: "inline-flex", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 3 };
   const chip = (active) => ({
     display: "inline-flex", alignItems: "center", gap: 6, minHeight: 40, padding: "0 12px",
     borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
@@ -587,23 +606,43 @@ export function WorkView({ t, ctx, events, onSelect }) {
   const countBadge = (n, active) => (
     <span style={{ fontSize: 11, fontWeight: 800, opacity: active ? 0.9 : 0.6 }}>{n || 0}</span>
   );
+  const navBtn = {
+    minWidth: 44, minHeight: 40, padding: "0 12px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+    fontSize: 14, fontWeight: 800, border: `1px solid ${t.border}`, background: t.surface, color: t.text,
+  };
+  const dd = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
 
   return (
     <div>
-      {/* Kommend / Vergangen */}
-      <div style={{ display: "inline-flex", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 3, marginBottom: 10 }}>
-        {[[false, "Kommend"], [true, "Vergangen"]].map(([val, label]) => (
-          <button key={label} onClick={() => setPast(val)} style={{
-            border: "none", borderRadius: 8, minHeight: 36, padding: "0 14px", cursor: "pointer",
-            fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            background: past === val ? t.accent : "transparent", color: past === val ? "#fff" : t.muted,
-          }}>{label}</button>
-        ))}
+      {/* Liste / Woche  (+ Kommend / Vergangen nur in der Liste) */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <div style={segWrap}>
+          <button onClick={() => setMode("list")} style={seg(mode === "list")}>Liste</button>
+          <button onClick={() => setMode("week")} style={seg(mode === "week")}>Woche</button>
+        </div>
+        {mode === "list" && (
+          <div style={segWrap}>
+            <button onClick={() => setPast(false)} style={seg(!past)}>Kommend</button>
+            <button onClick={() => setPast(true)} style={seg(past)}>Vergangen</button>
+          </div>
+        )}
       </div>
 
-      {/* Kategorien */}
+      {/* Wochen-Navigation */}
+      {mode === "week" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+          <button onClick={() => setWeekISO(toISODate(addDays(ws, -7)))} style={navBtn} aria-label="Vorige Woche">‹</button>
+          <button onClick={() => setWeekISO(today)} style={navBtn}>Heute</button>
+          <button onClick={() => setWeekISO(toISODate(addDays(ws, 7)))} style={navBtn} aria-label="Nächste Woche">›</button>
+          <span style={{ fontWeight: 800, fontSize: 15, color: t.text, marginLeft: 4 }}>
+            {dd(wsISO)} – {dd(weISO)}{weISO.slice(0, 4)} · KW {isoWeek(wsISO)}
+          </span>
+        </div>
+      )}
+
+      {/* Kategorien (Anzahl bezieht sich auf die aktuelle Ansicht) */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        <button onClick={() => setCat("all")} style={chip(cat === "all")}>Alle {countBadge(occs.length, cat === "all")}</button>
+        <button onClick={() => setCat("all")} style={chip(cat === "all")}>Alle {countBadge(base.length, cat === "all")}</button>
         {WORK_CATEGORIES.map((c) => (
           <button key={c.id} onClick={() => setCat(c.id)} style={chip(cat === c.id)}>
             <span style={{ fontWeight: 400 }}>{c.icon}</span>{c.label} {countBadge(counts[c.id], cat === c.id)}
@@ -611,30 +650,45 @@ export function WorkView({ t, ctx, events, onSelect }) {
         ))}
       </div>
 
-      {groups.length === 0 ? (
-        <Empty t={t} text={past ? "Keine vergangenen Arbeitstermine im letzten Jahr." : "Keine kommenden Arbeitstermine."} />
-      ) : groups.map((g) => {
-        const [y, m] = g.key.split("-").map(Number);
-        return (
-          <div key={g.key} style={{ marginBottom: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>{MONTHS[m - 1]} {y}</h3>
-              <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({g.items.length})</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {g.items.map((ev) => (
-                <div key={ev.id + "_" + ev._occStart} style={{ position: "relative" }}>
-                  {ev.date === today && (
-                    <span style={{ position: "absolute", top: -6, right: 8, zIndex: 1, background: t.accent, color: "#fff",
-                      fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "1px 6px" }}>HEUTE</span>
-                  )}
-                  <EventChip t={t} ev={ev} ctx={ctx} onClick={() => onSelect(ev)} showDate />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      {mode === "week"
+        ? <WeekView t={t} ctx={ctx} dateISO={wsISO} occ={weekOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />
+        : <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} onSelect={onSelect} />}
     </div>
   );
+}
+
+function WorkList({ t, ctx, items, past, today, onSelect }) {
+  // Nach Monat gruppieren (Reihenfolge bleibt erhalten)
+  const groups = [];
+  for (const o of items) {
+    const key = o.date.slice(0, 7);
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) { g = { key, items: [] }; groups.push(g); }
+    g.items.push(o);
+  }
+  if (groups.length === 0) {
+    return <Empty t={t} text={past ? "Keine vergangenen Arbeitstermine im letzten Jahr." : "Keine kommenden Arbeitstermine."} />;
+  }
+  return groups.map((g) => {
+    const [y, m] = g.key.split("-").map(Number);
+    return (
+      <div key={g.key} style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>{MONTHS[m - 1]} {y}</h3>
+          <span style={{ fontSize: 12, fontWeight: 700, color: t.muted }}>({g.items.length})</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {g.items.map((ev) => (
+            <div key={ev.id + "_" + ev._occStart} style={{ position: "relative" }}>
+              {ev.date === today && (
+                <span style={{ position: "absolute", top: -6, right: 8, zIndex: 1, background: t.accent, color: "#fff",
+                  fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "1px 6px" }}>HEUTE</span>
+              )}
+              <EventChip t={t} ev={ev} ctx={ctx} onClick={() => onSelect(ev)} showDate />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  });
 }

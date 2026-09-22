@@ -790,7 +790,8 @@ export default function App({ onSignOut }) {
         {!searching && view === "shopping" && <Shopping t={t} ctx={ctx} items={shopping} setItems={persist.shopping} favs={shopFav} setFavs={persist.shopFav} lists={shopStore} setLists={persist.shopStore} />}
         {!searching && view === "notes" && <NiceToKnow t={t} ctx={ctx} items={notes} setItems={persist.notes} />}
         {!searching && view === "gossip" && <Gossip t={t} ctx={ctx} items={gossip} setItems={persist.gossip} />}
-        {!searching && view === "work" && <WorkView t={t} ctx={ctx} events={filteredEvents} onSelect={openEvent} />}
+        {!searching && view === "work" && <WorkView t={t} ctx={ctx} events={filteredEvents} onSelect={openEvent}
+          onPickDay={(iso) => { setCursor(iso); setView("day"); }} />}
 
         {/* ===== Copyright (dezent, erscheint auch beim Drucken/PDF) ===== */}
         <div className="app-copyright" style={{
