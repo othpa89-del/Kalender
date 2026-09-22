@@ -6,9 +6,9 @@ import {
   WEEKDAYS, WEEKDAYS_LONG,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
   timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
-  MONTHS, occurrencesInRange, WORK_CATEGORIES, workCategoryOf,
+  MONTHS, occurrencesInRange, WORK_CATEGORIES, workCategoryOf, fmtWeekTitle,
 } from "./data.js";
-import { EventChip, hexA, UserAvatar, ParticipantDots } from "./components.jsx";
+import { EventChip, hexA, UserAvatar, ParticipantDots, DateNav, Btn } from "./components.jsx";
 
 // Leeransicht
 function Empty({ t, text }) {
@@ -191,7 +191,8 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button onClick={() => setHideEmpty((v) => !v)} style={{
             background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-            fontSize: 12.5, fontWeight: 700, color: t.accent,
+            fontSize: 12.5, fontWeight: 700, color: t.accentText,
+            minHeight: 44, padding: "0 6px", margin: "-10px -6px -10px 0", // 44px Trefferfläche ohne Mehrhöhe
           }}>{hideEmpty ? "Leere Tage anzeigen" : `Leere Tage ausblenden (${emptyCount})`}</button>
         </div>
       )}
@@ -215,8 +216,8 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
               borderBottom: items.length ? `1px solid ${t.borderSoft}` : "none",
             }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 42, flex: "none" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? t.accent : weekend ? "#E5739A" : t.muted }}>{WEEKDAYS[wd]}</span>
-                <span style={{ fontSize: 21, fontWeight: 800, color: isToday ? t.accent : t.text, lineHeight: 1.05 }}>{d.getDate()}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? t.accentText : weekend ? "#E5739A" : t.muted }}>{WEEKDAYS[wd]}</span>
+                <span style={{ fontSize: 21, fontWeight: 800, color: isToday ? t.accentText : t.text, lineHeight: 1.05 }}>{d.getDate()}</span>
               </div>
               <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {WEEKDAYS_LONG[wd]}
@@ -402,7 +403,7 @@ export function MonthView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 <button key={"of" + idx} className="cal-more" onClick={() => onPickDay(toISODate(weekDays[Number(idx)]))}
                   title="Alle Termine des Tages öffnen" style={{
                     gridColumn: `${Number(idx) + 2} / span 1`, gridRow: MONTH_MAX_LANES + 1,
-                    fontSize: 11, fontWeight: 800, color: t.accent, textAlign: "center", lineHeight: "20px",
+                    fontSize: 11, fontWeight: 800, color: t.accentText, textAlign: "center", lineHeight: "20px",
                     background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0,
                   }}>+{overflow[idx]}</button>
               ))}
@@ -598,79 +599,115 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay, initialMode = "w
   const counts = {};
   for (const o of base) counts[o._cat] = (counts[o._cat] || 0) + 1;
   const byCat = (o) => cat === "all" || o._cat === cat;
+  const shownCount = cat === "all" ? base.length : (counts[cat] || 0);
+  const catInfo = WORK_CATEGORIES.find((c) => c.id === cat);
 
-  const seg = (active) => ({
-    border: "none", borderRadius: 8, minHeight: 36, padding: "0 14px", cursor: "pointer",
-    fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-    background: active ? t.accent : "transparent", color: active ? "#fff" : t.muted,
+  // Leere Woche/Monat: nächsten passenden Termin danach suchen (Sprung-Knopf)
+  const rangeEnd = mode === "week" ? weISO : meISO;
+  const nextOcc = React.useMemo(() => {
+    if (mode === "list" || shownCount > 0) return null;
+    const from = toISODate(addDays(parseISODate(rangeEnd), 1));
+    const to = toISODate(addDays(parseISODate(from), WORK_RANGE_DAYS));
+    return occurrencesInRange(work.filter((o) => cat === "all" || o._cat === cat), from, to)[0] || null;
+  }, [work, mode, shownCount, rangeEnd, cat]);
+
+  // Hierarchie: nur der Ansichts-Umschalter ist vollflächig blau; Unterauswahl
+  // (Kommend/Vergangen, Kategorien) ist getönt – sonst konkurrieren drei
+  // gleich starke blaue Flächen untereinander.
+  const tint = hexA(t.accent, t.mode === "dark" ? 0.28 : 0.12);
+  const selText = t.mode === "dark" ? t.accentText : t.navy;
+  const seg = (active, sub) => ({
+    flex: "1 1 0", border: "none", borderRadius: 8, minHeight: 40, padding: "0 12px", cursor: "pointer",
+    fontFamily: "inherit", fontSize: 14, fontWeight: active ? 800 : 700, whiteSpace: "nowrap",
+    background: active ? (sub ? tint : t.accent) : "transparent",
+    color: active ? (sub ? selText : "#fff") : t.muted,
   });
-  const segWrap = { display: "inline-flex", background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: 3 };
+  const segWrap = (maxWidth) => ({
+    display: "flex", gap: 2, width: "100%", maxWidth, background: t.surface,
+    border: `1px solid ${t.border}`, borderRadius: 11, padding: 3,
+  });
   const chip = (active) => ({
-    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 40, padding: "0 12px",
-    borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-    whiteSpace: "nowrap", border: `1px solid ${active ? t.accent : t.border}`,
-    background: active ? t.accent : t.surface, color: active ? "#fff" : t.text,
+    display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 12px",
+    borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: active ? 800 : 700,
+    whiteSpace: "nowrap", flex: "none", border: `1.5px solid ${active ? t.accent : t.border}`,
+    background: active ? tint : t.surface, color: active ? selText : t.text,
   });
   const countBadge = (n, active) => (
-    <span style={{ fontSize: 11, fontWeight: 800, opacity: active ? 0.9 : 0.6 }}>{n || 0}</span>
+    <span style={{
+      minWidth: 20, padding: "1px 6px", borderRadius: 10, textAlign: "center",
+      fontSize: 11.5, fontWeight: 800, lineHeight: 1.45,
+      background: active ? t.accent : t.chip,
+      color: active ? "#fff" : n ? t.text : t.faint,
+    }}>{n || 0}</span>
   );
-  const navBtn = {
-    minWidth: 44, minHeight: 40, padding: "0 12px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-    fontSize: 14, fontWeight: 800, border: `1px solid ${t.border}`, background: t.surface, color: t.text,
-  };
-  const dd = (iso) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.`;
+  const stepWeek = (dir) => setAnchorISO(toISODate(addDays(ws, dir * 7)));
+  const stepMonth = (dir) => setAnchorISO(toISODate(new Date(mY, mM + dir, 1)));
+  const periodText = mode === "week" ? "in dieser Woche" : "in diesem Monat";
 
   return (
     <div>
-      {/* Liste / Woche  (+ Kommend / Vergangen nur in der Liste) */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-        <div style={segWrap}>
-          <button onClick={() => setMode("week")} style={seg(mode === "week")}>Woche</button>
-          <button onClick={() => setMode("month")} style={seg(mode === "month")}>Monat</button>
-          <button onClick={() => setMode("list")} style={seg(mode === "list")}>Liste</button>
-        </div>
-        {mode === "list" && (
-          <div style={segWrap}>
-            <button onClick={() => setPast(false)} style={seg(!past)}>Kommend</button>
-            <button onClick={() => setPast(true)} style={seg(past)}>Vergangen</button>
-          </div>
-        )}
+      {/* 1) Ansicht: Woche | Monat | Liste – volle Breite am Handy */}
+      <div style={{ ...segWrap(440), marginBottom: 10 }}>
+        <button onClick={() => setMode("week")} aria-pressed={mode === "week"} style={seg(mode === "week")}>Woche</button>
+        <button onClick={() => setMode("month")} aria-pressed={mode === "month"} style={seg(mode === "month")}>Monat</button>
+        <button onClick={() => setMode("list")} aria-pressed={mode === "list"} style={seg(mode === "list")}>Liste</button>
       </div>
 
-      {/* Navigation für Woche / Monat */}
-      {mode !== "list" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-          <button onClick={() => setAnchorISO(mode === "week" ? toISODate(addDays(ws, -7)) : toISODate(new Date(mY, mM - 1, 1)))}
-            style={navBtn} aria-label={mode === "week" ? "Vorige Woche" : "Voriger Monat"}>‹</button>
-          <button onClick={() => setAnchorISO(today)} style={navBtn}>Heute</button>
-          <button onClick={() => setAnchorISO(mode === "week" ? toISODate(addDays(ws, 7)) : toISODate(new Date(mY, mM + 1, 1)))}
-            style={navBtn} aria-label={mode === "week" ? "Nächste Woche" : "Nächster Monat"}>›</button>
-          <span style={{ fontWeight: 800, fontSize: 15, color: t.text, marginLeft: 4 }}>
-            {mode === "week"
-              ? <>{dd(wsISO)} – {dd(weISO)}{weISO.slice(0, 4)} · KW {isoWeek(wsISO)}</>
-              : <>{MONTHS[mM]} {mY}</>}
-          </span>
+      {/* 2) Zeitraum: ‹ Heute › + Titel (wie in Tag/Woche/Monat) bzw. Kommend/Vergangen in der Liste */}
+      {mode !== "list" ? (
+        <DateNav t={t} style={{ marginBottom: 10 }}
+          title={mode === "week" ? fmtWeekTitle(wsISO) : `${MONTHS[mM]} ${mY}`}
+          onPrev={() => (mode === "week" ? stepWeek(-1) : stepMonth(-1))}
+          onNext={() => (mode === "week" ? stepWeek(1) : stepMonth(1))}
+          onToday={() => setAnchorISO(today)}
+          prevLabel={mode === "week" ? "Vorige Woche" : "Voriger Monat"}
+          nextLabel={mode === "week" ? "Nächste Woche" : "Nächster Monat"} />
+      ) : (
+        <div style={{ ...segWrap(300), marginBottom: 10 }}>
+          <button onClick={() => setPast(false)} aria-pressed={!past} style={seg(!past, true)}>Kommend</button>
+          <button onClick={() => setPast(true)} aria-pressed={past} style={seg(past, true)}>Vergangen</button>
         </div>
       )}
 
-      {/* Kategorien (Anzahl bezieht sich auf die aktuelle Ansicht) */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
-        <button onClick={() => setCat("all")} style={chip(cat === "all")}>Alle {countBadge(base.length, cat === "all")}</button>
-        {WORK_CATEGORIES.map((c) => (
-          <button key={c.id} onClick={() => setCat(c.id)} style={chip(cat === c.id)}>
-            <span style={{ fontWeight: 400 }}>{c.icon}</span>{c.label} {countBadge(counts[c.id], cat === c.id)}
-          </button>
-        ))}
+      {/* 3) Kategorien – eine waagrecht scrollbare Zeile statt zwei umbrechender
+          (Anzahl bezieht sich auf die aktuelle Ansicht) */}
+      <div className="tab-scroll" style={{ overflowX: "auto", margin: "0 -12px 12px", padding: "0 12px" }}>
+        <div style={{ display: "inline-flex", gap: 6 }}>
+          <button onClick={() => setCat("all")} aria-pressed={cat === "all"} style={chip(cat === "all")}>Alle {countBadge(base.length, cat === "all")}</button>
+          {WORK_CATEGORIES.map((c) => (
+            <button key={c.id} onClick={() => setCat(c.id)} aria-pressed={cat === c.id} style={chip(cat === c.id)}>
+              <span aria-hidden style={{ fontWeight: 400 }}>{c.icon}</span>{c.label} {countBadge(counts[c.id], cat === c.id)}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Leerzustand für Woche/Monat (die Tage/das Raster bleiben darunter sichtbar) */}
+      {mode !== "list" && shownCount === 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12,
+          background: t.surface, border: `1px dashed ${t.border}`, borderRadius: 12, padding: "8px 8px 8px 14px",
+          fontSize: 13.5, color: t.muted,
+        }}>
+          <span style={{ flex: "1 1 180px", minWidth: 0, padding: "6px 0" }}>
+            {catInfo ? `Keine ${catInfo.label}-Termine ${periodText}.` : `Keine Arbeitstermine ${periodText}.`}
+          </span>
+          {nextOcc && (
+            <Btn t={t} kind="soft" onClick={() => setAnchorISO(nextOcc.date)} style={{ flex: "none", color: t.accentText }}>
+              Nächster: {nextOcc.date.slice(8, 10)}.{nextOcc.date.slice(5, 7)}.{nextOcc.date.slice(0, 4) !== today.slice(0, 4) ? nextOcc.date.slice(0, 4) : ""} ›
+            </Btn>
+          )}
+        </div>
+      )}
 
       {mode === "week" && <WeekView t={t} ctx={ctx} dateISO={wsISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
       {mode === "month" && <MonthView t={t} ctx={ctx} dateISO={msISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
-      {mode === "list" && <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} onSelect={onSelect} />}
+      {mode === "list" && <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} catLabel={catInfo && catInfo.label} onSelect={onSelect} />}
     </div>
   );
 }
 
-function WorkList({ t, ctx, items, past, today, onSelect }) {
+function WorkList({ t, ctx, items, past, today, catLabel, onSelect }) {
   // Nach Monat gruppieren (Reihenfolge bleibt erhalten)
   const groups = [];
   for (const o of items) {
@@ -680,7 +717,8 @@ function WorkList({ t, ctx, items, past, today, onSelect }) {
     g.items.push(o);
   }
   if (groups.length === 0) {
-    return <Empty t={t} text={past ? "Keine vergangenen Arbeitstermine im letzten Jahr." : "Keine kommenden Arbeitstermine."} />;
+    const what = catLabel ? `${catLabel}-Termine` : "Arbeitstermine";
+    return <Empty t={t} text={past ? `Keine vergangenen ${what} im letzten Jahr.` : `Keine kommenden ${what} in den nächsten 12 Monaten.`} />;
   }
   return groups.map((g) => {
     const [y, m] = g.key.split("-").map(Number);

@@ -14,13 +14,22 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
     }
     onClose();
   }
+  // Tastatur: Esc schließt (gleicher Weg wie der ×-Knopf, inkl. Rückfrage)
+  const closeRef = React.useRef(requestClose);
+  closeRef.current = requestClose;
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") closeRef.current(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   return (
     <div onClick={requestClose} style={{
       position: "fixed", inset: 0, background: "rgba(5,10,22,.62)", zIndex: 200,
       display: "flex", alignItems: "flex-start", justifyContent: "center",
       padding: "max(16px, env(safe-area-inset-top)) 12px 24px", overflowY: "auto",
     }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
+      <div role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}
+        onClick={(e) => e.stopPropagation()} style={{
         width: "100%", maxWidth: wide ? 720 : 540, background: t.surface, color: t.text,
         borderRadius: 16, border: `1px solid ${t.border}`, boxShadow: t.shadow,
         marginTop: 24, overflow: "hidden",
@@ -49,15 +58,20 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
 }
 
 // --- Formularfeld ------------------------------------------------------
-export function Field({ t, label, children, required, hint, dense }) {
+// group = als <div role="group"> statt <label>: nötig, wenn das Feld Buttons
+// enthält – ein <label> würde sonst beim Tippen auf Überschrift/Hinweis den
+// ersten Button darin auslösen.
+export function Field({ t, label, children, required, hint, dense, group }) {
+  const Tag = group ? "div" : "label";
   return (
-    <label style={{ display: "block", marginBottom: dense ? 8 : 12 }}>
+    <Tag role={group ? "group" : undefined} aria-label={group && typeof label === "string" ? label : undefined}
+      style={{ display: "block", marginBottom: dense ? 8 : 12 }}>
       <div style={{ fontSize: dense ? 11.5 : 12, fontWeight: 700, color: t.muted, marginBottom: dense ? 3 : 5 }}>
         {label}{required && <span style={{ color: "#E53935" }}> *</span>}
       </div>
       {children}
       {hint && <div style={{ fontSize: 11, color: t.faint, marginTop: 4 }}>{hint}</div>}
-    </label>
+    </Tag>
   );
 }
 
@@ -71,9 +85,11 @@ export function inputStyle(t, dense) {
 }
 
 export function Btn({ t, kind = "ghost", children, ...rest }) {
+  // minHeight 44 = Apple-Mindestgröße für Touch-Ziele; gleich hoch wie Eingabefelder.
   const base = {
     padding: "10px 14px", borderRadius: 9, fontSize: 14, fontWeight: 700,
     cursor: "pointer", fontFamily: "inherit", border: "1px solid transparent", lineHeight: 1.1,
+    minHeight: 44, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
   };
   const styles = {
     primary: { ...base, background: t.accent, color: "#fff" },
@@ -83,6 +99,23 @@ export function Btn({ t, kind = "ghost", children, ...rest }) {
     soft: { ...base, background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}` },
   };
   return <button {...rest} style={{ ...(styles[kind] || styles.ghost), ...(rest.style || {}) }}>{children}</button>;
+}
+
+// --- Datums-Navigation ‹ Heute › + Titel -------------------------------
+// Gemeinsam für Tag/Woche/Monat (App.jsx) und den Tab „Arbeit", damit beide
+// gleich aussehen und sich gleich bedienen lassen.
+export function DateNav({ t, title, onPrev, onNext, onToday, prevLabel = "Zurück", nextLabel = "Weiter", style }) {
+  const arrow = { minWidth: 44, padding: "0 12px", fontSize: 20, fontWeight: 800 };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, rowGap: 6, flexWrap: "wrap", ...(style || {}) }}>
+      <div style={{ display: "inline-flex", gap: 6, flex: "none" }}>
+        <Btn t={t} kind="soft" onClick={onPrev} aria-label={prevLabel} title={prevLabel} style={arrow}>‹</Btn>
+        <Btn t={t} kind="soft" onClick={onToday}>Heute</Btn>
+        <Btn t={t} kind="soft" onClick={onNext} aria-label={nextLabel} title={nextLabel} style={arrow}>›</Btn>
+      </div>
+      <span aria-live="polite" style={{ fontWeight: 800, fontSize: 15, color: t.text, minWidth: 0 }}>{title}</span>
+    </div>
+  );
 }
 
 // --- Segmented Control -------------------------------------------------
@@ -112,7 +145,7 @@ export function Toast({ t, toast }) {
   if (!toast) return null;
   const bg = toast.kind === "error" ? "#E53935" : toast.kind === "warn" ? "#FB8C00" : t.navy;
   return (
-    <div style={{
+    <div role={toast.kind === "error" ? "alert" : "status"} style={{
       position: "fixed", left: "50%", transform: "translateX(-50%)",
       bottom: "calc(92px + env(safe-area-inset-bottom))", zIndex: 400,
       background: bg, color: "#fff", padding: "11px 18px", borderRadius: 12,

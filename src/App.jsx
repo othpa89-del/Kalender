@@ -7,9 +7,9 @@ import {
   DEFAULT_USERS, DEFAULT_AREAS, DEFAULT_EVENT_TYPES, QUICK_TEMPLATES, DEFAULT_SHOP_FAVS, DEFAULT_SHOP_STORES, REMINDER_OPTIONS,
   PRIORITIES, theme, uid,
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
-  fmtDateLong, fmtDateShort, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
+  fmtDateLong, fmtDateShort, fmtWeekTitle, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
-import { Toast, Btn, Dot } from "./cal/components.jsx";
+import { Toast, Btn, Dot, DateNav } from "./cal/components.jsx";
 import { DayView, WeekView, MonthView, Dashboard, WorkView } from "./cal/views.jsx";
 import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
@@ -500,6 +500,27 @@ export default function App({ onSignOut }) {
   }
 
   function changeView(v) { setView(v); setMenuOpen(false); }
+
+  // Menü per Esc schließen (Tastatur/iPad mit Tastatur)
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  // Aktiven Tab in der (am iPhone horizontal scrollenden) Tab-Leiste sichtbar
+  // halten – z. B. „Arbeit" ganz rechts oder nach einem Sprung aus der Suche.
+  const tabBarRef = useRef(null);
+  useEffect(() => {
+    const bar = tabBarRef.current;
+    const el = bar && bar.querySelector('[aria-current="page"]');
+    if (!el) return;
+    const b = bar.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.left < b.left || r.right > b.right) {
+      bar.scrollBy({ left: r.left < b.left ? r.left - b.left - 12 : r.right - b.right + 12, behavior: "smooth" });
+    }
+  }, [view, loaded]);
   function navStep(dir) {
     const c = parseISODate(cursor);
     if (view === "day") setCursor(toISODate(addDays(c, dir)));
@@ -590,7 +611,7 @@ export default function App({ onSignOut }) {
   const headerTitle = (() => {
     const c = parseISODate(cursor);
     if (view === "day") return `${fmtDateShort(cursor)} · KW ${isoWeek(cursor)}`;
-    if (view === "week") { const ws = startOfWeek(c); return `${fmtDateShort(toISODate(ws))} – ${fmtDateShort(toISODate(addDays(ws, 6)))} · KW ${isoWeek(toISODate(ws))}`; }
+    if (view === "week") return fmtWeekTitle(toISODate(startOfWeek(c)));
     if (view === "month") return `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
     return "Dashboard";
   })();
@@ -638,33 +659,33 @@ export default function App({ onSignOut }) {
   }
 
   return (
-    <div className="app-root" style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: 90, zoom: 0.9 }}>
+    <div className="app-root" style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: FONT, paddingBottom: "calc(90px + env(safe-area-inset-bottom))", zoom: 0.9 }}>
       {/* ===== Header ===== */}
       <header style={{ background: t.navy, color: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.25)" }}>
-        <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) 14px 10px" }}>
+        <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left))" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 6 }}>
-            <span style={{ fontSize: 20 }}>📅</span>
-            <span style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>
+            <span aria-hidden style={{ fontSize: 20 }}>📅</span>
+            <span className="hdr-brand" style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
               {/* aktiver Benutzer (Ersteller neuer Einträge) */}
               <span className="hdr-label" style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,.7)", whiteSpace: "nowrap" }}>Angemeldet als</span>
               <select value={settings.activeUserId} onChange={(e) => persist.settings({ ...settings, activeUserId: e.target.value })}
-                title="Aktiver Benutzer" style={{
+                title="Aktiver Benutzer" aria-label="Angemeldet als" style={{
                   background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)",
                   borderRadius: 8, padding: "6px 8px", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
-                  maxWidth: 130, minWidth: 0,
+                  maxWidth: 130, minWidth: 0, minHeight: 44,
                 }}>
                 {users.map((u) => <option key={u.id} value={u.id} style={{ color: "#111" }}>{u.name}{u.role === "admin" ? " ★" : ""}</option>)}
               </select>
-              <button onClick={reloadApp} title="Neu laden (neueste Version & Daten)" style={hBtn}>🔄</button>
+              <button onClick={reloadApp} title="Neu laden (neueste Version & Daten)" aria-label="Neu laden" style={hBtn}>🔄</button>
               <button onClick={() => persist.settings({ ...settings, themeMode: settings.themeMode === "dark" ? "light" : "dark" })}
-                title="Hell/Dunkel" style={hBtn}>{settings.themeMode === "dark" ? "☀️" : "🌙"}</button>
-              {isAdmin && <button onClick={() => setAdminOpen(true)} title="Verwaltung" style={hBtn}>⚙️</button>}
+                title="Hell/Dunkel" aria-label={settings.themeMode === "dark" ? "Hellen Modus einschalten" : "Dunklen Modus einschalten"} style={hBtn}>{settings.themeMode === "dark" ? "☀️" : "🌙"}</button>
+              {isAdmin && <button onClick={() => setAdminOpen(true)} title="Verwaltung" aria-label="Verwaltung" style={hBtn}>⚙️</button>}
               <div style={{ position: "relative" }}>
-                <button onClick={() => setMenuOpen((o) => !o)} title="Menü" style={hBtn}>⋯</button>
+                <button onClick={() => setMenuOpen((o) => !o)} title="Menü" aria-label="Menü" aria-haspopup="menu" aria-expanded={menuOpen} style={hBtn}>⋯</button>
                 {menuOpen && (
-                  <div style={{
-                    position: "absolute", right: 0, top: 40, background: t.surface, color: t.text,
+                  <div role="menu" style={{
+                    position: "absolute", right: 0, top: 48, background: t.surface, color: t.text,
                     border: `1px solid ${t.border}`, borderRadius: 10, boxShadow: t.shadow, padding: 6, width: 232, zIndex: 130,
                   }}>
                     {[
@@ -674,7 +695,7 @@ export default function App({ onSignOut }) {
                       ["💾 JSON-Backup", exportJSON],
                       ["📥 Backup wiederherstellen", () => { setMenuOpen(false); fileInputRef.current?.click(); }],
                     ].map(([label, fn]) => (
-                      <button key={label} onClick={fn} style={menuItem(t)}>{label}</button>
+                      <button key={label} role="menuitem" onClick={fn} style={menuItem(t)}>{label}</button>
                     ))}
                   </div>
                 )}
@@ -683,10 +704,10 @@ export default function App({ onSignOut }) {
           </div>
 
           {/* Ansicht-Tabs */}
-          <div style={{ marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
+          <div ref={tabBarRef} className="tab-scroll" style={{ marginTop: 10, overflowX: "auto", paddingBottom: 2 }}>
             <div style={{ display: "inline-flex", gap: 4 }}>
               {VIEW_TABS.map((v) => (
-                <button key={v.id} onClick={() => changeView(v.id)} style={{
+                <button key={v.id} onClick={() => changeView(v.id)} aria-current={view === v.id ? "page" : undefined} style={{
                   border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
                   padding: "0 14px", minHeight: 44, fontSize: 13.5, fontWeight: 700,
                   background: view === v.id ? "#fff" : "rgba(255,255,255,.10)",
@@ -698,7 +719,7 @@ export default function App({ onSignOut }) {
         </div>
       </header>
 
-      <main style={{ maxWidth: 980, margin: "0 auto", padding: "14px 12px" }}>
+      <main style={{ maxWidth: 980, margin: "0 auto", padding: "14px max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left))" }}>
         {/* ===== Schnellanlage (nur auf der Startseite) ===== */}
         {view === "dashboard" && !searching && (
           <div style={{ marginBottom: 14 }}>
@@ -711,7 +732,7 @@ export default function App({ onSignOut }) {
                 return (
                   <button key={q.id} onClick={() => openQuick(q)} style={{
                     display: "flex", alignItems: "center", gap: 5, background: t.surface, color: t.text,
-                    border: `1px solid ${t.border}`, borderRadius: 20, padding: "6px 11px",
+                    border: `1px solid ${t.border}`, borderRadius: 20, padding: "0 12px", minHeight: 38,
                     fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                   }}>{icon} {q.label}</button>
                 );
@@ -723,12 +744,18 @@ export default function App({ onSignOut }) {
         {/* ===== Suche & Filter ===== */}
         <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Suche über alles (Termine, Aufgaben, Einkauf, Notizen, Gossip)…"
-                style={{ flex: 1, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 16, fontFamily: "inherit", outline: "none" }} />
-              {search && <Btn t={t} kind="ghost" onClick={() => setSearch("")} style={{ flex: "none" }}>✕</Btn>}
+              {/* Kurzer Platzhalter: der lange Text wurde am iPhone abgeschnitten */}
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="🔍 Überall suchen …"
+                aria-label="Suche über alles (Termine, Aufgaben, Einkauf, Notizen, Gossip)"
+                title="Sucht in Terminen, Aufgaben, Einkauf, Notizen und Gossip"
+                enterKeyHint="search" autoComplete="off"
+                onKeyDown={(e) => { if (e.key === "Escape") setSearch(""); }}
+                style={{ flex: 1, minWidth: 0, minHeight: 44, padding: "10px 12px", border: `1px solid ${t.border}`, borderRadius: 10, background: t.input, color: t.text, fontSize: 16, fontFamily: "inherit", outline: "none" }} />
+              {search && <Btn t={t} kind="ghost" onClick={() => setSearch("")} aria-label="Suche leeren" style={{ flex: "none", minWidth: 44 }}>✕</Btn>}
               {!isList && (
                 <Btn t={t} kind={(showFilters || activeFilterCount > 0) ? "primary" : "ghost"}
-                  onClick={() => setShowFilters((o) => !o)} style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  onClick={() => setShowFilters((o) => !o)} aria-expanded={showFilters}
+                  style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
                   Filter
                   {activeFilterCount > 0 && (
                     <span style={{
@@ -753,7 +780,7 @@ export default function App({ onSignOut }) {
                   options={[["all", "Alle"], ["both", "Beide dabei"], ...users.map((u) => [u.id, `${u.name} dabei`])]} />
                 {(fUser !== "all" || fArea !== "all" || fPrio !== "all" || fType !== "all" || fPart !== "all") && (
                   <button onClick={() => { setFUser("all"); setFArea("all"); setFPrio("all"); setFType("all"); setFPart("all"); }}
-                    style={{ alignSelf: "flex-end", background: "none", border: "none", color: t.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    style={{ alignSelf: "flex-end", background: "none", border: "none", color: t.accentText, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", minHeight: 44, padding: "0 8px" }}>
                     Zurücksetzen
                   </button>
                 )}
@@ -768,12 +795,10 @@ export default function App({ onSignOut }) {
 
         {/* ===== Datums-Navigation ===== */}
         {showNav && !searching && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-            <Btn t={t} kind="soft" onClick={() => navStep(-1)}>‹</Btn>
-            <Btn t={t} kind="soft" onClick={goToday}>Heute</Btn>
-            <Btn t={t} kind="soft" onClick={() => navStep(1)}>›</Btn>
-            <span style={{ fontWeight: 800, fontSize: 15, color: t.text }}>{headerTitle}</span>
-          </div>
+          <DateNav t={t} title={headerTitle} onPrev={() => navStep(-1)} onNext={() => navStep(1)} onToday={goToday}
+            prevLabel={view === "day" ? "Voriger Tag" : view === "week" ? "Vorige Woche" : "Voriger Monat"}
+            nextLabel={view === "day" ? "Nächster Tag" : view === "week" ? "Nächste Woche" : "Nächster Monat"}
+            style={{ marginBottom: 14 }} />
         )}
 
         {/* ===== Ansicht ===== */}
@@ -837,17 +862,17 @@ export default function App({ onSignOut }) {
 
       {/* „Rückgängig" nach dem Löschen – sitzt ÜBER dem Toast (gestapelt) */}
       {undo && (
-        <div style={{
+        <div role="status" style={{
           position: "fixed", left: "50%", transform: "translateX(-50%)",
           bottom: `calc(${toast ? 148 : 92}px + env(safe-area-inset-bottom))`, zIndex: 440,
-          background: t.navy, color: "#fff", borderRadius: 12, padding: "9px 10px 9px 16px",
+          background: t.navy, color: "#fff", borderRadius: 12, padding: "5px 6px 5px 16px",
           display: "flex", alignItems: "center", gap: 14, maxWidth: "92vw",
           boxShadow: "0 10px 30px rgba(0,0,0,.4)",
         }}>
           <span style={{ fontSize: 14, fontWeight: 700 }}>{undo.msg}</span>
           <button onClick={doUndo} style={{
             background: "rgba(255,255,255,.18)", color: "#fff", border: "none", borderRadius: 8,
-            padding: "6px 12px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+            padding: "0 14px", minHeight: 44, fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
           }}>Rückgängig</button>
         </div>
       )}
@@ -880,7 +905,7 @@ const hBtn = {
 };
 const menuItem = (t) => ({
   display: "block", width: "100%", textAlign: "left", background: "none", border: "none",
-  padding: "9px 10px", fontSize: 13.5, fontWeight: 600, color: t.text, cursor: "pointer",
+  padding: "6px 10px", minHeight: 44, lineHeight: 1.25, fontSize: 13.5, fontWeight: 600, color: t.text, cursor: "pointer",
   borderRadius: 7, fontFamily: "inherit",
 });
 

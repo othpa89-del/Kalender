@@ -81,7 +81,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
       {/* Liste */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: t.text }}>Aufgaben</h3>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ ...sel, width: "auto", padding: "6px 8px" }}>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Aufgaben anzeigen" style={{ ...sel, width: "auto", padding: "6px 8px", minHeight: 40 }}>
           <option value="open">Offen</option>
           <option value="done">Erledigt</option>
           <option value="all">Alle</option>
@@ -92,7 +92,12 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
       </div>
 
       {visible.length === 0 ? (
-        <div style={{ textAlign: "center", color: t.faint, padding: 30, fontSize: 14 }}>Keine Aufgaben.</div>
+        <div style={{ textAlign: "center", color: t.faint, padding: "40px 16px", fontSize: 14 }}>
+          <div style={{ fontSize: 30, marginBottom: 8 }}>✅</div>
+          {tasks.length === 0 ? "Noch keine Aufgaben. Oben eintragen."
+            : filter === "open" ? "Alles erledigt – keine offenen Aufgaben."
+            : filter === "done" ? "Noch nichts erledigt." : "Keine Aufgaben."}
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
           {visible.map((x) => {
@@ -106,8 +111,11 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
                 border: `1px solid ${overdue ? "#E53935" : t.border}`, borderLeft: `4px solid ${prio ? prio.color : t.borderSoft}`,
                 borderRadius: 10, padding: "10px 12px",
               }}>
-                <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
-                  style={{ width: 20, height: 20, accentColor: t.accent, marginTop: 1, flex: "none" }} />
+                {/* Label vergrößert die Trefferfläche auf 44px, ohne das Layout zu verschieben */}
+                <label style={{ display: "inline-flex", padding: 12, margin: -12, marginRight: -10, flex: "none", cursor: "pointer" }}>
+                  <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)} aria-label={`„${x.title}" erledigt`}
+                    style={{ width: 20, height: 20, accentColor: t.accent, marginTop: 1, flex: "none" }} />
+                </label>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: t.text, textDecoration: x.done ? "line-through" : "none", opacity: x.done ? 0.6 : 1 }}>
                     {x.title}
@@ -121,8 +129,8 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 12, flex: "none" }}>
-                  <button onClick={() => edit(x)} style={iconBtn(t)} title="Bearbeiten">✏️</button>
-                  <button onClick={() => remove(x.id)} style={iconBtn(t)} title="Löschen">🗑️</button>
+                  <button onClick={() => edit(x)} style={iconBtn(t)} title="Bearbeiten" aria-label="Bearbeiten">✏️</button>
+                  <button onClick={() => remove(x.id)} style={iconBtn(t)} title="Löschen" aria-label="Löschen">🗑️</button>
                 </div>
               </div>
             );

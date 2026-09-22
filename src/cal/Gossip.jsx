@@ -39,6 +39,10 @@ export function Gossip({ t, ctx, items, setItems }) {
   const [fArea, setFArea] = useState("all");
   const [sort, setSort] = useState("new");
   const sel = inputStyle(t);
+  // Aktueller Stand für „Rückgängig": setItems (persist.gossip) erwartet ein
+  // Array, keine Updater-Funktion – sonst schlug das Wiederherstellen fehl.
+  const itemsRef = React.useRef(items);
+  itemsRef.current = items;
   // 16px: sonst zoomt iOS beim Antippen hinein.
   const ctrl = { ...sel, padding: "7px 9px" };
   // Rubrik-/Level-Filter zuruecksetzen, sonst waere der Treffer ausgeblendet.
@@ -94,7 +98,7 @@ export function Gossip({ t, ctx, items, setItems }) {
     setItems(items.map((x) => (x.id === id ? { ...x, comments: (x.comments || []).filter((c) => c.id !== cid) } : x)));
     // Bisher der einzige Loeschweg ganz ohne Rueckgaengig – jetzt mit.
     if (gone && ctx.showUndo) {
-      ctx.showUndo("Kommentar gelöscht", () => setItems((cur) => cur.map((x) => (
+      ctx.showUndo("Kommentar gelöscht", () => setItems(itemsRef.current.map((x) => (
         x.id === id && !(x.comments || []).some((c) => c.id === cid)
           ? { ...x, comments: [...(x.comments || []), gone] }
           : x))));
@@ -147,7 +151,7 @@ export function Gossip({ t, ctx, items, setItems }) {
       {/* Filter & Sortierung */}
       {items.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 140px", minWidth: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Level</span>
             <select style={ctrl} value={fLevel} onChange={(e) => setFLevel(e.target.value)}>
               <option value="all">Alle Level</option>
@@ -157,7 +161,7 @@ export function Gossip({ t, ctx, items, setItems }) {
               ))}
             </select>
           </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 140px", minWidth: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Area</span>
             <select style={ctrl} value={fArea} onChange={(e) => setFArea(e.target.value)}>
               <option value="all">Alle Areas</option>
@@ -167,7 +171,7 @@ export function Gossip({ t, ctx, items, setItems }) {
               ))}
             </select>
           </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 120px", minWidth: 0 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 3, flex: "1 1 140px", minWidth: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: t.muted }}>Sortieren</span>
             <select style={ctrl} value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="new">Neueste zuerst</option>
@@ -215,8 +219,8 @@ export function Gossip({ t, ctx, items, setItems }) {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 12, flex: "none" }}>
-                    <button onClick={() => edit(x)} title="Bearbeiten" style={iconBtn}>✏️</button>
-                    <button onClick={() => remove(x.id)} title="Löschen" style={iconBtn}>🗑️</button>
+                    <button onClick={() => edit(x)} title="Bearbeiten" aria-label="Bearbeiten" style={iconBtn}>✏️</button>
+                    <button onClick={() => remove(x.id)} title="Löschen" aria-label="Löschen" style={iconBtn}>🗑️</button>
                   </div>
                 </div>
 
@@ -248,7 +252,7 @@ export function Gossip({ t, ctx, items, setItems }) {
                       onChange={(e) => setCDraft((d) => ({ ...d, [x.id]: e.target.value }))}
                       placeholder="Kommentar hinzufügen …"
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(x.id); } }} />
-                    <Btn t={t} kind="soft" onClick={() => addComment(x.id)} style={{ flex: "none" }}>＋</Btn>
+                    <Btn t={t} kind="soft" onClick={() => addComment(x.id)} aria-label="Kommentar hinzufügen" style={{ flex: "none", minWidth: 44 }}>＋</Btn>
                   </div>
                 </div>
               </div>

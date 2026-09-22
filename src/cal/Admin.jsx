@@ -74,7 +74,7 @@ function UsersAdmin({ t, ctx, sel }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {ctx.users.map((u) => (
           <div key={u.id} style={row(t)}>
-            <input type="color" value={u.color} onChange={(e) => update(u.id, { color: e.target.value })} style={colorInp} />
+            <input type="color" value={u.color} onChange={(e) => update(u.id, { color: e.target.value })} aria-label={`Farbe von ${u.name}`} style={colorInp} />
             <input value={u.name} onChange={(e) => update(u.id, { name: e.target.value })} style={{ ...sel, flex: "1 1 120px", minWidth: 0 }} />
             <select value={u.role} onChange={(e) => update(u.id, { role: e.target.value })} style={{ ...sel, flex: "1 1 130px", minWidth: 0 }}>
               <option value="admin">Administrator</option>
@@ -114,9 +114,9 @@ function AreasAdmin({ t, ctx, sel }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {ctx.areas.map((a) => (
           <div key={a.id} style={row(t)}>
-            <input type="color" value={a.color} onChange={(e) => update(a.id, { color: e.target.value })} style={colorInp} />
+            <input type="color" value={a.color} onChange={(e) => update(a.id, { color: e.target.value })} aria-label={`Farbe von ${a.name}`} style={colorInp} />
             <input value={a.name} onChange={(e) => update(a.id, { name: e.target.value })} style={{ ...sel, flex: 1 }} />
-            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: t.muted, flex: "none" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: t.muted, flex: "none", minHeight: 44, cursor: "pointer" }}>
               <input type="checkbox" checked={a.active !== false} onChange={(e) => update(a.id, { active: e.target.checked })}
                 style={{ width: 16, height: 16, accentColor: t.accent }} /> aktiv
             </label>
@@ -158,11 +158,11 @@ function TypesAdmin({ t, ctx, sel }) {
             <IconPicker t={t} value={x.icon} onChange={(ic) => update(x.id, { icon: ic })} />
             <input value={x.name} onChange={(e) => update(x.id, { name: e.target.value })} style={{ ...sel, flex: 1 }} />
             {x.aviation && <span style={{ fontSize: 10, fontWeight: 800, color: t.accent, flex: "none" }}>AVIATION</span>}
-            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: t.muted, flex: "none" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: t.muted, flex: "none", minHeight: 44, cursor: "pointer" }}>
               <input type="checkbox" checked={x.active !== false} onChange={(e) => update(x.id, { active: e.target.checked })}
                 style={{ width: 16, height: 16, accentColor: t.accent }} /> aktiv
             </label>
-            <Btn t={t} kind="ghost" onClick={() => remove(x.id)} style={{ flex: "none" }}>×</Btn>
+            <Btn t={t} kind="ghost" onClick={() => remove(x.id)} aria-label={`Terminart „${x.name}" löschen`} style={{ flex: "none", minWidth: 44 }}>×</Btn>
           </div>
         ))}
       </div>
@@ -223,4 +223,4 @@ const row = (t) => ({
   display: "flex", alignItems: "center", gap: 8, background: t.surface,
   border: `1px solid ${t.border}`, borderRadius: 10, padding: 8, flexWrap: "wrap",
 });
-const colorInp = { width: 42, height: 40, padding: 0, border: "none", background: "none", borderRadius: 8, cursor: "pointer", flex: "none" };
+const colorInp = { width: 44, height: 44, padding: 0, border: "none", background: "none", borderRadius: 8, cursor: "pointer", flex: "none" };

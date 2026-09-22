@@ -154,8 +154,8 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 12, flex: "none" }}>
-                    <button onClick={() => edit(x)} title="Bearbeiten" style={iconBtn}>✏️</button>
-                    <button onClick={() => remove(x.id)} title="Löschen" style={iconBtn}>🗑️</button>
+                    <button onClick={() => edit(x)} title="Bearbeiten" aria-label="Bearbeiten" style={iconBtn}>✏️</button>
+                    <button onClick={() => remove(x.id)} title="Löschen" aria-label="Löschen" style={iconBtn}>🗑️</button>
                   </div>
                 </div>
               </div>

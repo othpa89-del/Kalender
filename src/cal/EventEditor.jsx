@@ -138,7 +138,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                   ...p, title: q.label, icon: q.icon || p.icon,
                 }))} style={{
                   display: "flex", alignItems: "center", gap: 5, background: t.chip, color: t.text,
-                  border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "6px 11px",
+                  border: `1px solid ${t.borderSoft}`, borderRadius: 20, padding: "0 12px", minHeight: 38,
                   fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                 }}>{icon} {q.label}</button>
               );
@@ -153,7 +153,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         </Field>
 
         {/* Ganztägig-Schalter: blendet die Uhrzeiten aus, Termin gilt den ganzen Tag */}
-        <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: t.text, cursor: "pointer", marginBottom: 12 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: t.text, cursor: "pointer", marginBottom: 8, minHeight: 44 }}>
           <input type="checkbox" checked={!!f.allDay} onChange={(e) => toggleAllDay(e.target.checked)}
             style={{ width: 18, height: 18, accentColor: t.accent }} />
           🗓️ Ganztägig
@@ -239,17 +239,17 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         </div>
 
         {/* Teilnehmer – wer muss dabei sein */}
-        <Field t={t} label="Teilnehmer – wer muss dabei sein?" hint="Markierte Personen müssen beim Termin dabei sein; erscheinen als farbige Punkte am Termin.">
+        <Field t={t} group label="Teilnehmer – wer muss dabei sein?" hint="Markierte Personen müssen beim Termin dabei sein; erscheinen als farbige Punkte am Termin.">
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {ctx.users.map((u) => {
               const on = (f.participants || []).includes(u.id);
               return (
-                <button key={u.id} type="button" onClick={() => {
+                <button key={u.id} type="button" aria-pressed={on} onClick={() => {
                   const s = new Set(f.participants || []);
                   s.has(u.id) ? s.delete(u.id) : s.add(u.id);
                   set("participants", Array.from(s));
                 }} style={{
-                  display: "flex", alignItems: "center", gap: 7, padding: "7px 12px", borderRadius: 22,
+                  display: "flex", alignItems: "center", gap: 7, padding: "0 13px", minHeight: 44, borderRadius: 22,
                   cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700,
                   background: on ? u.color : t.chip, color: on ? "#fff" : t.text,
                   border: `1.5px solid ${on ? u.color : t.border}`,
@@ -263,7 +263,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
               const all = ctx.users.every((u) => (f.participants || []).includes(u.id));
               return (
                 <button type="button" onClick={() => set("participants", all ? [] : ctx.users.map((u) => u.id))} style={{
-                  padding: "7px 12px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit",
+                  padding: "0 13px", minHeight: 44, borderRadius: 22, cursor: "pointer", fontFamily: "inherit",
                   fontSize: 13.5, fontWeight: 800, background: t.surface2, color: t.text, border: `1.5px solid ${t.borderSoft}`,
                 }}>{all ? "Keine" : "Alle / Beide"}</button>
               );
@@ -273,7 +273,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
 
         {/* Änderbarkeit */}
         <Field t={t} label="Änderbarkeit">
-          <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: t.text, cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: t.text, cursor: "pointer", minHeight: 44 }}>
             <input type="checkbox" checked={!!f.locked} onChange={(e) => set("locked", e.target.checked)}
               style={{ width: 18, height: 18, accentColor: t.accent }} />
             🔒 Gesperrt – nur Ersteller oder Administrator dürfen ändern/löschen
@@ -320,12 +320,12 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                   {WEEKDAYS.map((w, i) => {
                     const on = (rec.weekdays || []).includes(i);
                     return (
-                      <button key={w} onClick={() => {
+                      <button key={w} type="button" aria-pressed={on} onClick={() => {
                         const wd = new Set(rec.weekdays || []);
                         on ? wd.delete(i) : wd.add(i);
                         setRec("weekdays", Array.from(wd));
                       }} style={{
-                        width: 36, height: 32, borderRadius: 7, border: `1px solid ${on ? t.accent : t.border}`,
+                        width: 40, height: 40, borderRadius: 8, border: `1px solid ${on ? t.accent : t.border}`,
                         background: on ? t.accent : t.input, color: on ? "#fff" : t.text, fontSize: 12,
                         fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                       }}>{w}</button>
@@ -374,10 +374,10 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           </Field>
 
           {/* Anhänge & Links */}
-          <Field t={t} label="Anhänge & Links" hint="PDF, Bilder, Word, Excel (max. 800 KB) oder Web-Link.">
+          <Field t={t} group label="Anhänge & Links" hint="PDF, Bilder, Word, Excel (max. 800 KB) oder Web-Link.">
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
               <input style={{ ...sel, flex: "1 1 160px" }} value={f.link || ""} onChange={(e) => set("link", e.target.value)}
-                placeholder="https://… (Link)" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addLinkAttachment())} />
+                placeholder="https://… (Link)" aria-label="Web-Link" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addLinkAttachment())} />
               <Btn t={t} kind="soft" onClick={addLinkAttachment} type="button">Link +</Btn>
               <label style={{ ...navLink(t), cursor: "pointer" }}>
                 📎 Datei
@@ -390,8 +390,11 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
                   <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, background: t.surface2, border: `1px solid ${t.borderSoft}`, borderRadius: 8, padding: "6px 9px" }}>
                     <span>{a.kind === "link" ? "🔗" : "📎"}</span>
                     <a href={a.kind === "link" ? a.url : a.dataUrl} target="_blank" rel="noreferrer" download={a.kind === "file" ? a.name : undefined}
-                      style={{ flex: 1, fontSize: 13, color: t.accent, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
-                    {!readOnly && <button onClick={() => removeAtt(a.id)} style={{ background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 16 }}>×</button>}
+                      style={{ flex: 1, minWidth: 0, fontSize: 13, color: t.accentText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</a>
+                    {!readOnly && <button type="button" onClick={() => removeAtt(a.id)} aria-label={`Anhang „${a.name}" entfernen`} style={{
+                      background: "none", border: "none", color: t.faint, cursor: "pointer", fontSize: 20, lineHeight: 1,
+                      minWidth: 44, minHeight: 44, margin: "-8px -9px -8px 0", padding: 0, flex: "none",
+                    }}>×</button>}
                   </div>
                 ))}
               </div>

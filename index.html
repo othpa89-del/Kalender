@@ -55,11 +55,26 @@
       /* Rueckmeldung beim Tippen/Ueberfahren. opacity wirkt auch auf transparente
          Buttons und ueberschreibt kein Inline-transform (z. B. zentrierter FAB). */
       button { transition: opacity .12s ease; }
+      /* iOS: schnelles Doppeltippen (z. B. ‹ › beim Blättern) soll nicht zoomen,
+         langes Drücken auf Buttons keinen Text markieren. */
+      button, a, label, select, input { touch-action: manipulation; }
+      button { -webkit-user-select: none; user-select: none; }
       @media (hover: hover) { button:hover:not(:disabled) { opacity: .82; } }
       button:active:not(:disabled) { opacity: .6; }
       /* Sehr schmale Handys: Beschriftung weglassen, damit die Kopfzeilen-Buttons
          nicht zusammengequetscht werden. */
-      @media (max-width: 400px) { .hdr-label { display: none; } }
+      /* Bis 520px (alle iPhones) passt die Kopfzeile nur ohne "Angemeldet als"
+         in EINE Zeile; unter 400px zusaetzlich ohne Schriftzug (Icon bleibt).
+         Spart am Handy eine ganze Zeile im festen Kopfbereich. */
+      @media (max-width: 520px) { .hdr-label { display: none; } }
+      @media (max-width: 400px) { .hdr-brand { display: none; } }
+      /* Waagrecht scrollende Leisten (Tabs, Kategorie-Chips): am Touch-Geraet
+         ohne Scrollbalken (mit Maus bleibt er als Bedienhilfe sichtbar). */
+      .tab-scroll { -webkit-overflow-scrolling: touch; }
+      @media (pointer: coarse) {
+        .tab-scroll { scrollbar-width: none; }
+        .tab-scroll::-webkit-scrollbar { display: none; }
+      }
       /* Monatsansicht auch am Handy gut treffbar (Balken/Tageszahlen groesser) */
       .cal-bars { grid-auto-rows: 22px !important; row-gap: 3px !important; }
       .cal-bar { line-height: 22px !important; font-size: 11px !important; border-radius: 5px !important; padding: 0 6px !important; }

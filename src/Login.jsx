@@ -67,19 +67,20 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
         {notice && <div style={S.err}>{notice}</div>}
 
         {mode !== "reset" && (
-          <input style={S.inp} type="email" placeholder="E-Mail" value={email}
-            onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+          <input style={S.inp} type="email" placeholder="E-Mail" aria-label="E-Mail" value={email} inputMode="email" autoCapitalize="none" autoCorrect="off"
+            onChange={(e) => setEmail(e.target.value)} autoComplete="username"
+            onKeyDown={(e) => e.key === "Enter" && mode === "forgot" && submit()} />
         )}
 
         {mode !== "forgot" && (
-          <input style={S.inp} type="password" placeholder={mode === "reset" ? "Neues Passwort" : "Passwort"} value={pw}
+          <input style={S.inp} type="password" placeholder={mode === "reset" ? "Neues Passwort" : "Passwort"} aria-label={mode === "reset" ? "Neues Passwort" : "Passwort"} value={pw}
             onChange={(e) => setPw(e.target.value)}
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             onKeyDown={(e) => e.key === "Enter" && mode !== "reset" && submit()} />
         )}
 
         {mode === "reset" && (
-          <input style={S.inp} type="password" placeholder="Neues Passwort wiederholen" value={pw2}
+          <input style={S.inp} type="password" placeholder="Neues Passwort wiederholen" aria-label="Neues Passwort wiederholen" value={pw2}
             onChange={(e) => setPw2(e.target.value)} autoComplete="new-password"
             onKeyDown={(e) => e.key === "Enter" && submit()} />
         )}
@@ -93,11 +94,11 @@ export default function Login({ supabase, recovery = false, onDone, notice = "" 
         )}
 
         <button style={{ ...S.btn, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={submit}>
-          {busy ? "…" : cta}
+          {busy ? "Bitte warten …" : cta}
         </button>
 
-        {err && <div style={S.err}>{err}</div>}
-        {msg && <div style={S.msg}>{msg}</div>}
+        {err && <div role="alert" style={S.err}>{err}</div>}
+        {msg && <div role="status" style={S.msg}>{msg}</div>}
 
         {mode === "signin" && (
           <button style={S.link} onClick={() => { setErr(""); setMsg(""); setMode("forgot"); }}>
@@ -126,8 +127,8 @@ const S = {
   brandRow: { display: "flex", alignItems: "center", gap: 10 },
   brand: { fontSize: 30, fontWeight: 900, color: "#FFFFFF", letterSpacing: "-0.02em" },
   sub: { fontSize: 13, color: "#9DB0CE", marginBottom: 6, marginTop: -6 },
-  inp: { padding: "11px 12px", border: "1px solid #2A3C5E", borderRadius: 8, fontSize: 16, fontFamily: "inherit", background: "#0F1C33", color: "#E8EDF6" },
-  btn: { padding: "11px 12px", background: "#2E5BFF", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" },
+  inp: { minHeight: 44, padding: "11px 12px", border: "1px solid #2A3C5E", borderRadius: 8, fontSize: 16, fontFamily: "inherit", background: "#0F1C33", color: "#E8EDF6" },
+  btn: { minHeight: 48, padding: "11px 12px", background: "#2E5BFF", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" },
   remember: { display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#9DB0CE", fontWeight: 600, cursor: "pointer", marginTop: 2, minHeight: 44 },
   link: { background: "none", border: "none", color: "#7FA0FF", fontSize: 14, fontWeight: 600, cursor: "pointer",
     padding: "10px 2px", minHeight: 44, alignSelf: "flex-start", textAlign: "left" },

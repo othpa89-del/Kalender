@@ -191,10 +191,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>LISTEN</span>
-          <button onClick={() => { setManageLists((m) => !m); setRenId(null); }} style={{
-            background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
-            fontSize: 13, fontWeight: 700, color: t.accent,
-          }}>{manageLists ? "Fertig" : "Verwalten"}</button>
+          <button onClick={() => { setManageLists((m) => !m); setRenId(null); }} style={textBtn(t)}>{manageLists ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {lists.slice().sort((a, b) => (a.name || "").toLowerCase().localeCompare((b.name || "").toLowerCase(), "de")).map((l) => { const cnt = items.filter((x) => !x.done && itemListId(x) === l.id).length; return (manageLists ? (
@@ -203,7 +200,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
                 <input autoFocus value={renText} onChange={(e) => setRenText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); renameList(l.id); } }}
                   style={{ ...sel, padding: "5px 9px", width: 130 }} />
-                <Btn t={t} kind="soft" onClick={() => renameList(l.id)} style={{ flex: "none" }}>✓</Btn>
+                <Btn t={t} kind="soft" onClick={() => renameList(l.id)} aria-label="Umbenennen bestätigen" style={{ flex: "none", minWidth: 44 }}>✓</Btn>
               </span>
             ) : (
               <span key={l.id} style={{
@@ -223,9 +220,9 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
             <button key={l.id} onClick={() => setActiveList(l.id)} style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: l.id === activeId ? t.accent : t.chip, color: l.id === activeId ? "#fff" : t.text,
-              border: `1px solid ${l.id === activeId ? t.accent : t.borderSoft}`, borderRadius: 18,
-              padding: "6px 12px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
-            }}>
+              border: `1px solid ${l.id === activeId ? t.accent : t.borderSoft}`, borderRadius: 20,
+              padding: "0 13px", minHeight: 40, fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+            }} aria-pressed={l.id === activeId}>
               {l.name}
               {cnt > 0 && <span style={{
                 fontSize: 11, fontWeight: 800, lineHeight: 1, minWidth: 17, textAlign: "center",
@@ -250,10 +247,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: t.muted, letterSpacing: ".03em" }}>HÄUFIGE ARTIKEL</span>
-          <button onClick={() => setManageFavs((m) => !m)} style={{
-            background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",
-            fontSize: 13, fontWeight: 700, color: t.accent,
-          }}>{manageFavs ? "Fertig" : "Verwalten"}</button>
+          <button onClick={() => setManageFavs((m) => !m)} style={textBtn(t)}>{manageFavs ? "Fertig" : "Verwalten"}</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
           {favs.slice().sort(byText).map((f) => { const fc = f.cat ? categoryById(f.cat) : null; return (manageFavs ? (
@@ -270,8 +264,8 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
             </span>
           ) : (
             <button key={f.id} onClick={() => addItem(f.text, f.cat || "")} style={{
-              background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}`, borderRadius: 16,
-              padding: "4px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              background: t.chip, color: t.text, border: `1px solid ${t.borderSoft}`, borderRadius: 18,
+              padding: "0 11px", minHeight: 36, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
             }}>+ {f.text}</button>
           )); })}
           {favs.length === 0 && <span style={{ fontSize: 12.5, color: t.faint }}>Keine häufigen Artikel – über „Verwalten" hinzufügen.</span>}
@@ -302,7 +296,7 @@ export function Shopping({ t, ctx, items, setItems, favs = [], setFavs, lists = 
           <input style={{ ...sel, flex: 1 }} value={text} onChange={(e) => setText(e.target.value)}
             placeholder="Was wird benötigt?" enterKeyHint="done"
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFromInput(); } }} />
-          <Btn t={t} kind="primary" onClick={addFromInput} style={{ fontSize: 22, padding: "0 16px", flex: "none" }}>+</Btn>
+          <Btn t={t} kind="primary" onClick={addFromInput} aria-label="Artikel hinzufügen" style={{ fontSize: 22, padding: "0 16px", flex: "none", minWidth: 48 }}>+</Btn>
         </div>
       </div>
 
@@ -370,8 +364,11 @@ function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, s
       display: "flex", alignItems: "center", gap: 10, background: t.surface,
       border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px",
     }}>
-      <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)}
-        style={{ width: 22, height: 22, accentColor: t.accent, flex: "none", cursor: "pointer" }} />
+      {/* Label vergrößert die Trefferfläche auf 44px, ohne das Layout zu verschieben */}
+      <label style={{ display: "inline-flex", padding: 11, margin: -11, marginRight: -9, flex: "none", cursor: "pointer" }}>
+        <input type="checkbox" checked={x.done} onChange={() => toggle(x.id)} aria-label={`„${x.text}" abhaken`}
+          style={{ width: 22, height: 22, margin: 0, accentColor: t.accent, flex: "none", cursor: "pointer" }} />
+      </label>
       {editing ? (
         <input autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
           onBlur={commitEdit} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitEdit(); } }}
@@ -402,13 +399,21 @@ const shopIconBtn = {
   justifyContent: "center", padding: 0, flex: "none",
 };
 
+// Text-Knopf („Verwalten"/„Fertig"): 44px Trefferfläche, negative Ränder
+// halten die Zeile trotzdem so niedrig wie bisher.
+const textBtn = (t) => ({
+  background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+  fontSize: 13, fontWeight: 700, color: t.accentText,
+  minHeight: 44, padding: "0 8px", margin: "-12px -8px",
+});
+
 function ActionLink({ t, children, onClick, danger, style }) {
   return (
     <button onClick={onClick} style={{
       background: danger ? "#E5393514" : t.chip, cursor: "pointer", fontFamily: "inherit",
       border: `1px solid ${danger ? "#E5393555" : t.borderSoft}`, borderRadius: 9,
-      padding: "0 12px", minHeight: 40, display: "inline-flex", alignItems: "center",
-      fontSize: 13, fontWeight: 700, color: danger ? "#E53935" : t.accent, ...(style || {}),
+      padding: "0 12px", minHeight: 44, display: "inline-flex", alignItems: "center",
+      fontSize: 13, fontWeight: 700, color: danger ? "#E53935" : t.accentText, ...(style || {}),
     }}>{children}</button>
   );
 }

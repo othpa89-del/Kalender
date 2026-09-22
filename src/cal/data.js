@@ -205,6 +205,18 @@ export function fmtDateShort(s) {
   const d = parseISODate(s);
   return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
+// Kompakter Wochen-Titel, passt am iPhone neben ‹ Heute › in eine Zeile:
+// "21.–27.09.2026 · KW 39", über Monatsgrenzen "29.09.–05.10.2026 · KW 40",
+// über den Jahreswechsel "29.12.2025–04.01.2026 · KW 1".
+export function fmtWeekTitle(wsISO) {
+  const we = toISODate(addDays(parseISODate(wsISO), 6));
+  const d = (s) => s.slice(8, 10) + ".", m = (s) => s.slice(5, 7) + ".", y = (s) => s.slice(0, 4);
+  let range;
+  if (y(wsISO) !== y(we)) range = `${d(wsISO)}${m(wsISO)}${y(wsISO)}–${d(we)}${m(we)}${y(we)}`;
+  else if (m(wsISO) !== m(we)) range = `${d(wsISO)}${m(wsISO)}–${d(we)}${m(we)}${y(we)}`;
+  else range = `${d(wsISO)}–${d(we)}${m(we)}${y(we)}`;
+  return `${range} · KW ${isoWeek(wsISO)}`;
+}
 
 // Minuten seit Mitternacht aus "HH:MM"
 export function timeToMin(t) {
@@ -571,6 +583,8 @@ export function theme(mode) {
       border: "#2A3C5E", borderSoft: "#223150",
       input: "#0F1C33", chip: "#1C2D4E", shadow: "0 10px 30px rgba(0,0,0,.45)",
       todayBg: "rgba(46,91,255,.16)",
+      // Akzent als SCHRIFTfarbe: das kräftige Blau ist auf Dunkel zu kontrastarm
+      accentText: "#7FA0FF",
     };
   }
   return {
@@ -581,5 +595,6 @@ export function theme(mode) {
     border: "#D9E1EE", borderSoft: "#E7EDF6",
     input: "#FFFFFF", chip: "#EEF2FA", shadow: "0 10px 30px rgba(20,40,80,.10)",
     todayBg: "rgba(46,91,255,.10)",
+    accentText: ACCENT,
   };
 }
