@@ -9,7 +9,7 @@ import {
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
   fmtDateLong, fmtDateShort, fmtWeekTitle, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
-import { Toast, Btn, Dot, DateNav } from "./cal/components.jsx";
+import { Toast, Btn, Dot, DateNav, useScrollLock } from "./cal/components.jsx";
 import { DayView, WeekView, MonthView, Dashboard, WorkView } from "./cal/views.jsx";
 import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
@@ -501,6 +501,9 @@ export default function App({ onSignOut }) {
 
   function changeView(v) { setView(v); setMenuOpen(false); }
 
+  // Hintergrund hinter der Löschen-Rückfrage nicht mitscrollen (iOS)
+  useScrollLock(!!confirmDel);
+
   // Menü per Esc schließen (Tastatur/iPad mit Tastatur)
   useEffect(() => {
     if (!menuOpen) return;
@@ -683,6 +686,10 @@ export default function App({ onSignOut }) {
               {isAdmin && <button onClick={() => setAdminOpen(true)} title="Verwaltung" aria-label="Verwaltung" style={hBtn}>⚙️</button>}
               <div style={{ position: "relative" }}>
                 <button onClick={() => setMenuOpen((o) => !o)} title="Menü" aria-label="Menü" aria-haspopup="menu" aria-expanded={menuOpen} style={hBtn}>⋯</button>
+                {/* Hintergrund zum Schließen: MUSS im Header liegen (gleicher
+                    Stapelkontext wie das Menü). Außerhalb lag er über dem
+                    ganzen Header samt Menü – jeder Tipp schloss nur das Menü. */}
+                {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 120 }} />}
                 {menuOpen && (
                   <div role="menu" style={{
                     position: "absolute", right: 0, top: 48, background: t.surface, color: t.text,
@@ -694,6 +701,7 @@ export default function App({ onSignOut }) {
                       ["📤 Export ICS (Outlook/Google/Apple)", exportICS],
                       ["💾 JSON-Backup", exportJSON],
                       ["📥 Backup wiederherstellen", () => { setMenuOpen(false); fileInputRef.current?.click(); }],
+                      ...(onSignOut ? [["🚪 Abmelden", () => { setMenuOpen(false); if (window.confirm("Wirklich abmelden?")) onSignOut(); }]] : []),
                     ].map(([label, fn]) => (
                       <button key={label} role="menuitem" onClick={fn} style={menuItem(t)}>{label}</button>
                     ))}
@@ -877,22 +885,7 @@ export default function App({ onSignOut }) {
         </div>
       )}
 
-      {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 110 }} />}
 
-      {/* Abmelden: liegt INNERHALB von .app-root, damit es sich korrekt hinter
-          Dialogen/Meldungen einordnet, und ist bei offenem Dialog ausgeblendet. */}
-      {onSignOut && !editor && !adminOpen && !confirmDel && (
-        <button onClick={() => { if (window.confirm("Wirklich abmelden?")) onSignOut(); }}
-          style={{
-            position: "fixed", bottom: "calc(12px + env(safe-area-inset-bottom))",
-            right: "calc(12px + env(safe-area-inset-right))", zIndex: 50,
-            fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            color: t.muted, background: t.surface,
-            border: `1px solid ${t.border}`, borderRadius: 10,
-            minHeight: 44, padding: "0 14px", cursor: "pointer",
-            boxShadow: "0 4px 14px rgba(0,0,0,.18)",
-          }}>Abmelden</button>
-      )}
     </div>
   );
 }

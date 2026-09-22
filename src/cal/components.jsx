@@ -4,6 +4,31 @@
 import React from "react";
 import { priorityById, timeToMin, occTimeLabel } from "./data.js";
 
+// --- Scroll-Sperre hinter Dialogen ---------------------------------------
+// iOS Safari ignoriert overflow:hidden am body – daher body fixieren und die
+// Scrollposition merken. Zähler, weil Dialoge verschachtelt sein können
+// (z. B. Löschen-Rückfrage über dem Termin-Editor).
+let scrollLocks = 0, lockedY = 0;
+function lockScroll() {
+  if (scrollLocks++ > 0) return;
+  lockedY = window.scrollY || 0;
+  const b = document.body.style;
+  b.position = "fixed"; b.top = `-${lockedY}px`; b.left = "0"; b.right = "0"; b.width = "100%";
+}
+function unlockScroll() {
+  if (scrollLocks === 0 || --scrollLocks > 0) return;
+  const b = document.body.style;
+  b.position = ""; b.top = ""; b.left = ""; b.right = ""; b.width = "";
+  window.scrollTo(0, lockedY);
+}
+export function useScrollLock(active = true) {
+  React.useLayoutEffect(() => {
+    if (!active) return;
+    lockScroll();
+    return unlockScroll;
+  }, [active]);
+}
+
 // --- Modal -------------------------------------------------------------
 export function Modal({ t, title, onClose, children, footer, wide, hasChanges }) {
   // Bei ungespeicherten Eingaben erst nachfragen – und zwar auf JEDEM Weg nach
@@ -14,6 +39,7 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
     }
     onClose();
   }
+  useScrollLock();
   // Tastatur: Esc schließt (gleicher Weg wie der ×-Knopf, inkl. Rückfrage)
   const closeRef = React.useRef(requestClose);
   closeRef.current = requestClose;

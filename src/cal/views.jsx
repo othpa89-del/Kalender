@@ -555,13 +555,26 @@ function uniqueOcc(list) {
   return out;
 }
 
+// Stand des Arbeit-Tabs beim Wechsel in andere Tabs merken. Bewusst nur im
+// Arbeitsspeicher: ein Neustart der App beginnt wieder mit der Woche. Nach
+// längerer Pause (App im Hintergrund) ebenfalls frisch starten.
+const WORK_MEMORY_MS = 30 * 60 * 1000;
+let workMemory = null;
+
 export function WorkView({ t, ctx, events, onSelect, onPickDay, initialMode = "week" }) {
-  const [mode, setMode] = React.useState(initialMode); // week | month | list – Standard: Woche
-  const [cat, setCat] = React.useState("all");
-  const [past, setPast] = React.useState(false);
   const today = todayISO();
+  const [mem] = React.useState(() =>
+    (workMemory && Date.now() - workMemory.ts < WORK_MEMORY_MS ? workMemory : null));
+  const [mode, setMode] = React.useState(mem ? mem.mode : initialMode); // week | month | list – Standard: Woche
+  const [cat, setCat] = React.useState(mem ? mem.cat : "all");
+  const [past, setPast] = React.useState(mem ? mem.past : false);
   // Gemeinsamer Bezugstag für Woche und Monat (Wechsel behält den Zeitraum bei)
-  const [anchorISO, setAnchorISO] = React.useState(today);
+  const [anchorISO, setAnchorISO] = React.useState(mem ? mem.anchorISO : today);
+  React.useEffect(() => {
+    workMemory = { mode, cat, past, anchorISO, ts: Date.now() };
+  }, [mode, cat, past, anchorISO]);
+  // Beim Verlassen des Tabs Zeitstempel erneuern (Pause zählt ab hier)
+  React.useEffect(() => () => { if (workMemory) workMemory.ts = Date.now(); }, []);
 
   const work = React.useMemo(
     () => events.filter((e) => workCategoryOf(e)).map((e) => ({ ...e, _cat: workCategoryOf(e).id })),
