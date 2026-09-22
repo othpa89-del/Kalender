@@ -543,7 +543,6 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
 //  Simulator automatisch gesammelt, nach Monat gruppiert.
 // ---------------------------------------------------------------------
 const WORK_RANGE_DAYS = 365;
-const WORK_MODE_KEY = "ctc_work_mode"; // zuletzt gewählte Ansicht (Liste/Woche) je Gerät
 
 // Mehrtägige Termine liefert occurrencesInRange je Tag – für Listen/Zähler nur EINMAL.
 function uniqueOcc(list) {
@@ -555,15 +554,13 @@ function uniqueOcc(list) {
   return out;
 }
 
-export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
-  const [mode, setModeState] = React.useState(() => {
-    try { return window.localStorage.getItem(WORK_MODE_KEY) === "week" ? "week" : "list"; } catch { return "list"; }
-  });
-  const setMode = (m) => { setModeState(m); try { window.localStorage.setItem(WORK_MODE_KEY, m); } catch {} };
+export function WorkView({ t, ctx, events, onSelect, onPickDay, initialMode = "week" }) {
+  const [mode, setMode] = React.useState(initialMode); // week | month | list – Standard: Woche
   const [cat, setCat] = React.useState("all");
   const [past, setPast] = React.useState(false);
   const today = todayISO();
-  const [weekISO, setWeekISO] = React.useState(today);
+  // Gemeinsamer Bezugstag für Woche und Monat (Wechsel behält den Zeitraum bei)
+  const [anchorISO, setAnchorISO] = React.useState(today);
 
   const work = React.useMemo(
     () => events.filter((e) => workCategoryOf(e)).map((e) => ({ ...e, _cat: workCategoryOf(e).id })),
@@ -580,13 +577,24 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
   }, [work, mode, past, today]);
 
   // Woche: Mo–So der gewählten Woche (mehrtägige Termine an jedem Tag)
-  const ws = startOfWeek(parseISODate(weekISO));
+  const anchor = parseISODate(anchorISO);
+  const ws = startOfWeek(anchor);
   const wsISO = toISODate(ws), weISO = toISODate(addDays(ws, 6));
-  const weekOcc = React.useMemo(
-    () => (mode === "week" ? occurrencesInRange(work, wsISO, weISO) : []),
-    [work, mode, wsISO, weISO]);
+  // Monat: komplettes Raster (inkl. Randtage), gezählt wird nur der Monat selbst
+  const mY = anchor.getFullYear(), mM = anchor.getMonth();
+  const grid = monthGrid(mY, mM);
+  const gsISO = toISODate(grid[0]), geISO = toISODate(grid[grid.length - 1]);
+  const msISO = toISODate(new Date(mY, mM, 1)), meISO = toISODate(new Date(mY, mM + 1, 0));
 
-  const base = mode === "week" ? uniqueOcc(weekOcc) : listOcc;
+  const rangeOcc = React.useMemo(() => {
+    if (mode === "week") return occurrencesInRange(work, wsISO, weISO);
+    if (mode === "month") return occurrencesInRange(work, gsISO, geISO);
+    return [];
+  }, [work, mode, wsISO, weISO, gsISO, geISO]);
+
+  const base = mode === "week" ? uniqueOcc(rangeOcc)
+    : mode === "month" ? uniqueOcc(rangeOcc.filter((o) => o.date >= msISO && o.date <= meISO))
+    : listOcc;
   const counts = {};
   for (const o of base) counts[o._cat] = (counts[o._cat] || 0) + 1;
   const byCat = (o) => cat === "all" || o._cat === cat;
@@ -617,8 +625,9 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
       {/* Liste / Woche  (+ Kommend / Vergangen nur in der Liste) */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
         <div style={segWrap}>
-          <button onClick={() => setMode("list")} style={seg(mode === "list")}>Liste</button>
           <button onClick={() => setMode("week")} style={seg(mode === "week")}>Woche</button>
+          <button onClick={() => setMode("month")} style={seg(mode === "month")}>Monat</button>
+          <button onClick={() => setMode("list")} style={seg(mode === "list")}>Liste</button>
         </div>
         {mode === "list" && (
           <div style={segWrap}>
@@ -628,14 +637,18 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
         )}
       </div>
 
-      {/* Wochen-Navigation */}
-      {mode === "week" && (
+      {/* Navigation für Woche / Monat */}
+      {mode !== "list" && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-          <button onClick={() => setWeekISO(toISODate(addDays(ws, -7)))} style={navBtn} aria-label="Vorige Woche">‹</button>
-          <button onClick={() => setWeekISO(today)} style={navBtn}>Heute</button>
-          <button onClick={() => setWeekISO(toISODate(addDays(ws, 7)))} style={navBtn} aria-label="Nächste Woche">›</button>
+          <button onClick={() => setAnchorISO(mode === "week" ? toISODate(addDays(ws, -7)) : toISODate(new Date(mY, mM - 1, 1)))}
+            style={navBtn} aria-label={mode === "week" ? "Vorige Woche" : "Voriger Monat"}>‹</button>
+          <button onClick={() => setAnchorISO(today)} style={navBtn}>Heute</button>
+          <button onClick={() => setAnchorISO(mode === "week" ? toISODate(addDays(ws, 7)) : toISODate(new Date(mY, mM + 1, 1)))}
+            style={navBtn} aria-label={mode === "week" ? "Nächste Woche" : "Nächster Monat"}>›</button>
           <span style={{ fontWeight: 800, fontSize: 15, color: t.text, marginLeft: 4 }}>
-            {dd(wsISO)} – {dd(weISO)}{weISO.slice(0, 4)} · KW {isoWeek(wsISO)}
+            {mode === "week"
+              ? <>{dd(wsISO)} – {dd(weISO)}{weISO.slice(0, 4)} · KW {isoWeek(wsISO)}</>
+              : <>{MONTHS[mM]} {mY}</>}
           </span>
         </div>
       )}
@@ -650,9 +663,9 @@ export function WorkView({ t, ctx, events, onSelect, onPickDay }) {
         ))}
       </div>
 
-      {mode === "week"
-        ? <WeekView t={t} ctx={ctx} dateISO={wsISO} occ={weekOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />
-        : <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} onSelect={onSelect} />}
+      {mode === "week" && <WeekView t={t} ctx={ctx} dateISO={wsISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
+      {mode === "month" && <MonthView t={t} ctx={ctx} dateISO={msISO} occ={rangeOcc.filter(byCat)} onSelect={onSelect} onPickDay={onPickDay || (() => {})} />}
+      {mode === "list" && <WorkList t={t} ctx={ctx} items={listOcc.filter(byCat)} past={past} today={today} onSelect={onSelect} />}
     </div>
   );
 }
