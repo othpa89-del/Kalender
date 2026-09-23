@@ -5,7 +5,7 @@ import React from "react";
 import {
   WEEKDAYS, WEEKDAYS_LONG,
   toISODate, parseISODate, addDays, startOfWeek, monthGrid, todayISO, isoWeek,
-  timeToMin, fmtDateLong, priorityById, dayConflictSet, occTimeLabel,
+  timeToMin, fmtDateLong, priorityById, occTimeLabel,
   MONTHS, occurrencesInRange, WORK_CATEGORIES, workCategoryOf, fmtWeekTitle,
 } from "./data.js";
 import { EventChip, hexA, UserAvatar, ParticipantDots, DateNav, Btn } from "./components.jsx";
@@ -172,72 +172,147 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
 }
 
 // ---------------------------------------------------------------------
-//  WOCHENANSICHT
+//  WOCHENANSICHT – 7 Tage nebeneinander im Zeitraster (wie Apple Kalender).
+//  Oben ganz-/mehrtägige Termine als Balken, darunter Termine mit Uhrzeit als
+//  Blöcke in Höhe ihrer Dauer. Farben wie im Monat (monthBarColor).
+//  Tippen auf Block: Termin öffnen. Tippen auf Tageskopf: Tagesansicht.
 // ---------------------------------------------------------------------
-// Vertikale Tagesliste: jeder Wochentag nimmt die volle Breite ein und zeigt
-// seine Termine gut lesbar darunter (mobilfreundlich, nichts wird abgeschnitten).
-export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
+function weekDays(dateISO) {
   const ws = startOfWeek(parseISODate(dateISO));
-  const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  return Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+}
+function WeekHead({ t, days, onPickDay, cols }) {
   const today = todayISO();
-  const [hideEmpty, setHideEmpty] = React.useState(false);
-  const dayHas = (d) => occ.some((e) => e.date === toISODate(d));
-  const emptyCount = days.filter((d) => !dayHas(d) && toISODate(d) !== today).length;
-  const shownDays = days.filter((d) => !hideEmpty || dayHas(d) || toISODate(d) === today);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* KW steht bereits im Navigations-Titel oben – hier nur der Filter-Umschalter. */}
-      {emptyCount > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={() => setHideEmpty((v) => !v)} style={{
-            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-            fontSize: 12.5, fontWeight: 700, color: t.accentText,
-            minHeight: 44, padding: "0 6px", margin: "-10px -6px -10px 0", // 44px Trefferfläche ohne Mehrhöhe
-          }}>{hideEmpty ? "Leere Tage anzeigen" : `Leere Tage ausblenden (${emptyCount})`}</button>
-        </div>
-      )}
-      {shownDays.map((d) => {
-        const iso = toISODate(d);
-        const items = occ.filter((e) => e.date === iso);
-        const conflicts = dayConflictSet(items);
-        const isToday = iso === today;
-        const wd = (d.getDay() + 6) % 7;
-        const weekend = wd >= 5;
+    <div style={{ display: "grid", gridTemplateColumns: cols, paddingBottom: 4 }}>
+      <div />
+      {days.map((d) => {
+        const iso = toISODate(d), wd = (d.getDay() + 6) % 7, isToday = iso === today;
         return (
-          <div key={iso} style={{
-            background: isToday ? t.todayBg : t.surface,
-            border: `1px solid ${isToday ? t.accent : t.border}`,
-            borderRadius: 12, overflow: "hidden",
+          <button key={iso} onClick={() => onPickDay(iso)} aria-label={`${WEEKDAYS_LONG[wd]} ${d.getDate()}. – Tagesansicht`} style={{
+            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: "2px 0",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minHeight: 44,
           }}>
-            <button onClick={() => onPickDay(iso)} style={{
-              display: "flex", alignItems: "center", gap: 12, width: "100%",
-              background: "transparent", border: "none", cursor: "pointer",
-              padding: "9px 12px", textAlign: "left", fontFamily: "inherit",
-              borderBottom: items.length ? `1px solid ${t.borderSoft}` : "none",
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 42, flex: "none" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? t.accentText : weekend ? "#E5739A" : t.muted }}>{WEEKDAYS[wd]}</span>
-                <span style={{ fontSize: 21, fontWeight: 800, color: isToday ? t.accentText : t.text, lineHeight: 1.05 }}>{d.getDate()}</span>
-              </div>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: t.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {WEEKDAYS_LONG[wd]}
-              </span>
-              {isToday && <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: t.accent, borderRadius: 6, padding: "1px 7px", flex: "none" }}>Heute</span>}
-              {conflicts.size > 0 && <span title="Überschneidung" style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "#E53935", borderRadius: 6, padding: "1px 6px", flex: "none" }}>⚠️</span>}
-              <span style={{ fontSize: 12.5, color: t.muted, fontWeight: 700, flex: "none", minWidth: 16, textAlign: "right" }}>
-                {items.length || "–"}
-              </span>
-            </button>
-            {items.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 8 }}>
-                {items.map((ev, i) => (
-                  <EventChip key={ev.id + i} t={t} ev={ev} ctx={ctx} dense conflict={conflicts.has(ev.id)} onClick={() => onSelect(ev)} />
-                ))}
-              </div>
-            )}
-          </div>
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: wd >= 5 ? "#E5739A" : t.muted }}>{WEEKDAYS[wd]}</span>
+            <span style={{
+              fontSize: 15, fontWeight: 800, width: 26, height: 26, lineHeight: "26px", borderRadius: "50%", textAlign: "center",
+              background: isToday ? t.accent : "transparent", color: isToday ? "#fff" : wd >= 5 ? "#E5739A" : t.text,
+            }}>{d.getDate()}</span>
+          </button>
         );
       })}
+    </div>
+  );
+}
+
+export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
+  const days = weekDays(dateISO);
+  const isos = days.map(toISODate);
+  const today = todayISO();
+  const cols = "30px repeat(7, minmax(0, 1fr))";
+  const HOUR = 40;
+
+  // Ganztägige/mehrtägige Termine als Balken oben (je Termin EIN Balken)
+  const allDay = [], seen = new Set();
+  for (const e of occ) {
+    if (!(e.allDay || (e._span || 1) > 1)) continue;
+    const k = e.id + "_" + e._occStart;
+    if (seen.has(k)) continue; seen.add(k);
+    const idxs = isos.map((iso, i) => (occ.some((o) => o.id === e.id && o._occStart === e._occStart && o.date === iso) ? i : -1)).filter((i) => i >= 0);
+    allDay.push({ ev: e, start: Math.min(...idxs), end: Math.max(...idxs) });
+  }
+  allDay.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const laneEnds = [];
+  for (const b of allDay) {
+    let lane = laneEnds.findIndex((end) => end < b.start);
+    if (lane === -1) { lane = laneEnds.length; laneEnds.push(b.end); } else laneEnds[lane] = b.end;
+    b.lane = lane;
+  }
+
+  // Termine mit Uhrzeit je Tag
+  const timed = isos.map((iso) => layoutDay(occ.filter((e) => e.date === iso && !e.allDay && !((e._span || 1) > 1))));
+  const mins = timed.flat().flatMap((p) => [p.s, p.e]);
+  const startH = Math.min(7, ...mins.map((m) => Math.floor(m / 60)));
+  const endH = Math.max(20, ...mins.map((m) => Math.ceil(m / 60)));
+  const hours = Array.from({ length: endH - startH }, (_, i) => startH + i);
+  const nowIdx = isos.indexOf(today);
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  return (
+    <div>
+      <WeekHead t={t} days={days} onPickDay={onPickDay} cols={cols} />
+      {allDay.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 22, rowGap: 3, marginBottom: 6 }}>
+          {allDay.map((b) => (
+            <button key={b.ev.id + b.ev._occStart} onClick={() => onSelect(b.ev)} className="cal-bar" style={{
+              gridColumn: `${b.start + 2} / ${b.end + 3}`, gridRow: b.lane + 1,
+              background: monthBarColor(b.ev, t), color: "#fff", border: "none", borderRadius: 5,
+              fontSize: 11, fontWeight: 700, padding: "0 5px", overflow: "hidden", whiteSpace: "nowrap",
+              textOverflow: "ellipsis", cursor: "pointer", fontFamily: "inherit", lineHeight: "22px",
+              textAlign: b.end > b.start ? "center" : "left",
+            }} title={`${b.ev.title || "(ohne Titel)"} · ${occTimeLabel(b.ev)}`}>
+              <span aria-hidden style={{ fontWeight: 400 }}>{b.ev.icon || "📌"}</span> {b.ev.title || "(ohne Titel)"}</button>
+          ))}
+        </div>
+      )}
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: cols, borderTop: `1px solid ${t.border}` }}>
+        {/* Stunden */}
+        <div>
+          {hours.map((h) => (
+            <div key={h} style={{ height: HOUR, fontSize: 9.5, color: t.faint, fontWeight: 600, paddingTop: 1 }}>{String(h).padStart(2, "0")}</div>
+          ))}
+        </div>
+        {isos.map((iso, di) => {
+          const wd = di;
+          return (
+            <div key={iso} style={{
+              position: "relative", borderLeft: `1px solid ${t.borderSoft}`,
+              background: iso === today ? t.todayBg : wd >= 5 ? hexA("#E5739A", t.mode === "dark" ? 0.07 : 0.05) : "transparent",
+            }}>
+              {hours.map((h) => <div key={h} style={{ height: HOUR, borderBottom: `1px solid ${t.borderSoft}` }} />)}
+              {timed[di].map(({ ev, lane, s, e, colCount, conflict }, i) => {
+                const top = ((s - startH * 60) / 60) * HOUR;
+                const height = Math.max(((e - s) / 60) * HOUR - 2, 18);
+                // Überschneidung: nicht die (am iPhone ~45 px schmale) Spalte teilen,
+                // sondern spätere Termine eingerückt darüberlegen – wie Apple Kalender.
+                const indent = colCount > 1 ? Math.min(28, 60 / (colCount - 1)) : 0;
+                const left = lane * indent, w = 100 - left;
+                const roomy = height >= 44; // Platz für Zeit, Icon und Titel untereinander
+                return (
+                  <button key={ev.id + i} onClick={() => onSelect(ev)}
+                    title={`${ev.title || "(ohne Titel)"} · ${occTimeLabel(ev)}`}
+                    aria-label={`${ev.title || "(ohne Titel)"}, ${occTimeLabel(ev)}${conflict ? ", Überschneidung" : ""}`} style={{
+                    position: "absolute", top, height, left: `calc(${left}% + 1px)`, width: `calc(${w}% - 2px)`,
+                    background: monthBarColor(ev, t), color: "#fff", borderRadius: 5,
+                    border: conflict ? "2px solid #E53935" : "none",
+                    // heller Rand trennt übereinanderliegende Blöcke
+                    boxShadow: lane > 0 ? `0 0 0 1.5px ${t.bg}` : "none",
+                    padding: "2px 3px", overflow: "hidden", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+                    display: "flex", flexDirection: "column", gap: 1, zIndex: 1 + lane,
+                  }}>
+                    {roomy ? (
+                      <>
+                        <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.9, lineHeight: 1.1 }}>{conflict ? "⚠️ " : ""}{ev.start}</span>
+                        <span aria-hidden style={{ fontSize: 13, lineHeight: 1 }}>{ev.icon || "📌"}</span>
+                        <span lang="de" style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.15, overflowWrap: "anywhere", hyphens: "auto", WebkitHyphens: "auto" }}>{ev.title || "(ohne Titel)"}</span>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 10, fontWeight: 700, lineHeight: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <span aria-hidden style={{ fontWeight: 400 }}>{ev.icon || "📌"}</span> {ev.title || "(ohne Titel)"}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {di === nowIdx && nowMin >= startH * 60 && nowMin <= endH * 60 && (
+                <div style={{ position: "absolute", left: 0, right: 0, top: ((nowMin - startH * 60) / 60) * HOUR, height: 2, background: "#E53935", zIndex: 3 }}>
+                  <span style={{ position: "absolute", left: -4, top: -3, width: 8, height: 8, borderRadius: "50%", background: "#E53935" }} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
