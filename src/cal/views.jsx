@@ -56,6 +56,16 @@ function layoutDay(items) {
   return placed;
 }
 
+// Eine Stunde im Zeitraster: durchgezogene Linie unten (= nächste volle
+// Stunde), gestrichelte Halbstunden-Linie in der Mitte.
+function HourCell({ t, height, style }) {
+  return (
+    <div style={{ height, position: "relative", borderBottom: `1px solid ${t.border}`, ...(style || {}) }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: height / 2, borderTop: `1px dashed ${t.borderSoft}` }} />
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------
 //  TAGESANSICHT
 // ---------------------------------------------------------------------
@@ -89,7 +99,10 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
       : (nowMin != null ? nowMin : 8 * 60);
     const rect = el.getBoundingClientRect();
     const zoomFactor = el.offsetHeight ? rect.height / el.offsetHeight : 1;
-    const top = window.scrollY + rect.top + Math.max(0, ((firstMin / 60) * HOUR - 40) * zoomFactor);
+    // Feste Kopfzeile abziehen – sonst landet der erste Termin dahinter.
+    const hdr = document.querySelector("header");
+    const hdrH = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) : 0;
+    const top = window.scrollY + rect.top - hdrH + Math.max(0, ((firstMin / 60) * HOUR - 40) * zoomFactor);
     window.scrollTo({ top, behavior: "auto" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -114,11 +127,14 @@ export function DayView({ t, ctx, dateISO, occ, onSelect }) {
         {Array.from({ length: endHour - startHour }).map((_, i) => {
           const h = startHour + i;
           return (
-            <div key={h} style={{ display: "flex", height: HOUR, borderBottom: `1px solid ${t.borderSoft}` }}>
-              <div style={{ width: 46, flex: "none", fontSize: 11, color: t.faint, paddingTop: 2, fontWeight: 600 }}>
-                {String(h).padStart(2, "0")}:00
+            <div key={h} style={{ display: "flex", height: HOUR }}>
+              <div style={{ width: 46, flex: "none", position: "relative" }}>
+                <span style={{
+                  position: "absolute", top: 0, left: 0, transform: h === startHour ? "none" : "translateY(-50%)",
+                  fontSize: 11, color: t.faint, fontWeight: 600, lineHeight: 1,
+                }}>{String(h).padStart(2, "0")}:00</span>
               </div>
-              <div style={{ flex: 1 }} />
+              <HourCell t={t} height={HOUR} style={{ flex: 1 }} />
             </div>
           );
         })}
@@ -311,7 +327,13 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
         {/* Stunden */}
         <div>
           {hours.map((h) => (
-            <div key={h} style={{ height: HOUR, fontSize: 9.5, color: t.faint, fontWeight: 600, paddingTop: 1 }}>{String(h).padStart(2, "0")}</div>
+            <div key={h} style={{ height: HOUR, position: "relative" }}>
+              {/* Uhrzeit sitzt mittig auf der Stundenlinie (00 oben bündig) */}
+              <span style={{
+                position: "absolute", top: 0, right: 5, transform: h === startH ? "none" : "translateY(-50%)",
+                fontSize: 9.5, color: t.faint, fontWeight: 600, lineHeight: 1,
+              }}>{String(h).padStart(2, "0")}</span>
+            </div>
           ))}
         </div>
         {isos.map((iso, di) => {
@@ -321,7 +343,7 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
               position: "relative", borderLeft: `1px solid ${t.borderSoft}`,
               background: iso === today ? t.todayBg : wd >= 5 ? hexA("#E5739A", t.mode === "dark" ? 0.07 : 0.05) : "transparent",
             }}>
-              {hours.map((h) => <div key={h} style={{ height: HOUR, borderBottom: `1px solid ${t.borderSoft}` }} />)}
+              {hours.map((h) => <HourCell key={h} t={t} height={HOUR} />)}
               {timed[di].map(({ ev, lane, s, e, colCount, conflict }, i) => {
                 const top = ((s - startH * 60) / 60) * HOUR;
                 const height = Math.max(((e - s) / 60) * HOUR - 2, 18);
