@@ -230,11 +230,15 @@ export function minToTime(min) {
 }
 
 // 6x7-Raster für die Monatsansicht (immer ganze Wochen, Montag-Start)
+// Nur die Wochen, die der Monat wirklich berührt (4–6), statt fest 6 –
+// sonst steht oft eine komplette Woche des Folgemonats im Raster.
 export function monthGrid(year, month) {
   const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
   const start = startOfWeek(first);
+  const end = addDays(startOfWeek(last), 6);
   const days = [];
-  for (let i = 0; i < 42; i++) days.push(addDays(start, i));
+  for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
   return days;
 }
 

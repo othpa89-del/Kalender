@@ -435,7 +435,7 @@ export default function App({ onSignOut }) {
     const c = parseISODate(cursor);
     if (view === "day") return [cursor, cursor];
     if (view === "week") { const ws = startOfWeek(c); return [toISODate(ws), toISODate(addDays(ws, 6))]; }
-    if (view === "month") { const g = monthGrid(c.getFullYear(), c.getMonth()); return [toISODate(g[0]), toISODate(g[41])]; }
+    if (view === "month") { const g = monthGrid(c.getFullYear(), c.getMonth()); return [toISODate(g[0]), toISODate(g[g.length - 1])]; }
     // dashboard
     return [todayISO(), toISODate(addDays(parseISODate(todayISO()), 6))];
   }, [view, cursor]);
