@@ -9,7 +9,7 @@ import {
   todayISO, toISODate, parseISODate, addDays, addMonths, startOfWeek, monthGrid, isoWeek,
   fmtDateLong, fmtDateShort, fmtWeekTitle, MONTHS, occurrencesInRange, buildICS, downloadFile, timeToMin,
 } from "./cal/data.js";
-import { Toast, Btn, Dot, DateNav, useScrollLock } from "./cal/components.jsx";
+import { Toast, Btn, Dot, DateNav, useScrollLock, Icon, AppLogo } from "./cal/components.jsx";
 import { DayView, WeekView, MonthView, Dashboard, WorkView } from "./cal/views.jsx";
 import { EventEditor } from "./cal/EventEditor.jsx";
 import { Admin } from "./cal/Admin.jsx";
@@ -669,7 +669,7 @@ export default function App({ onSignOut }) {
       <header style={{ background: t.navy, color: "#fff", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.25)" }}>
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left))" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 6 }}>
-            <span aria-hidden style={{ fontSize: 20 }}>📅</span>
+            <AppLogo size={34} accent={t.accent} />
             <span className="hdr-brand" style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-.01em" }}>Kalender</span>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
               {/* aktiver Benutzer (Ersteller neuer Einträge) */}
@@ -682,12 +682,12 @@ export default function App({ onSignOut }) {
                 }}>
                 {users.map((u) => <option key={u.id} value={u.id} style={{ color: "#111" }}>{u.name}{u.role === "admin" ? " ★" : ""}</option>)}
               </select>
-              <button onClick={reloadApp} title="Neu laden (neueste Version & Daten)" aria-label="Neu laden" style={hBtn}>🔄</button>
+              <button onClick={reloadApp} title="Neu laden (neueste Version & Daten)" aria-label="Neu laden" style={hBtn}><Icon name="refresh" /></button>
               <button onClick={() => persist.settings({ ...settings, themeMode: settings.themeMode === "dark" ? "light" : "dark" })}
-                title="Hell/Dunkel" aria-label={settings.themeMode === "dark" ? "Hellen Modus einschalten" : "Dunklen Modus einschalten"} style={hBtn}>{settings.themeMode === "dark" ? "☀️" : "🌙"}</button>
-              {isAdmin && <button onClick={() => setAdminOpen(true)} title="Verwaltung" aria-label="Verwaltung" style={hBtn}>⚙️</button>}
+                title="Hell/Dunkel" aria-label={settings.themeMode === "dark" ? "Hellen Modus einschalten" : "Dunklen Modus einschalten"} style={hBtn}><Icon name={settings.themeMode === "dark" ? "sun" : "moon"} /></button>
+              {isAdmin && <button onClick={() => setAdminOpen(true)} title="Verwaltung" aria-label="Verwaltung" style={hBtn}><Icon name="settings" /></button>}
               <div style={{ position: "relative" }}>
-                <button onClick={() => setMenuOpen((o) => !o)} title="Menü" aria-label="Menü" aria-haspopup="menu" aria-expanded={menuOpen} style={hBtn}>⋯</button>
+                <button onClick={() => setMenuOpen((o) => !o)} title="Menü" aria-label="Menü" aria-haspopup="menu" aria-expanded={menuOpen} style={hBtn}><Icon name="more" size={22} /></button>
                 {/* Hintergrund zum Schließen: MUSS im Header liegen (gleicher
                     Stapelkontext wie das Menü). Außerhalb lag er über dem
                     ganzen Header samt Menü – jeder Tipp schloss nur das Menü. */}

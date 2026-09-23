@@ -29,6 +29,41 @@ export function useScrollLock(active = true) {
   }, [active]);
 }
 
+// --- Linien-Icons (einheitlich, skalierbar, ohne Abhängigkeit) ---------
+// Stil wie „Feather“: 24er-Raster, Strichstärke 2, Farbe = currentColor.
+const ICON_PATHS = {
+  refresh: <><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></>,
+  moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+  sun: <><circle cx="12" cy="12" r="4.5" /><path d="M12 1.5v2.5M12 20v2.5M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M1.5 12H4M20 12h2.5M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77" /></>,
+  settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
+  more: <><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" /></>,
+};
+export function Icon({ name, size = 20, stroke = 2, style }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...(style || {}) }}>
+      {ICON_PATHS[name]}
+    </svg>
+  );
+}
+
+// App-Logo: Kalenderblatt mit dem heutigen Wochentag und Tag (wie das
+// iPhone-Kalender-Icon, aber in den App-Farben).
+export function AppLogo({ size = 34, accent = "#2E5BFF" }) {
+  const d = new Date();
+  const wd = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"][d.getDay()];
+  return (
+    <span aria-hidden="true" style={{
+      width: size, height: size, borderRadius: size * 0.27, flex: "none", overflow: "hidden",
+      display: "inline-flex", flexDirection: "column", background: "#fff",
+      boxShadow: "0 1px 3px rgba(0,0,0,.35)",
+    }}>
+      <span style={{ background: accent, color: "#fff", fontSize: size * 0.24, fontWeight: 800, lineHeight: `${size * 0.32}px`, textAlign: "center", letterSpacing: ".04em" }}>{wd}</span>
+      <span style={{ flex: 1, color: "#16233F", fontSize: size * 0.46, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>{d.getDate()}</span>
+    </span>
+  );
+}
+
 // --- Modal -------------------------------------------------------------
 export function Modal({ t, title, onClose, children, footer, wide, hasChanges }) {
   // Bei ungespeicherten Eingaben erst nachfragen – und zwar auf JEDEM Weg nach
