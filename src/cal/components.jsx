@@ -299,7 +299,8 @@ export function EventChip({ t, ev, ctx, onClick, showDate, dense, conflict }) {
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "stretch", gap: 0, width: "100%", textAlign: "left",
-      background: t.surface, border: conflict ? "1.5px solid #E53935" : `1px solid ${t.border}`, borderRadius: 10,
+      background: t.surface, border: conflict ? "1.5px solid #E53935" : `1px solid ${t.cardBorder}`, borderRadius: 10,
+      boxShadow: t.cardShadow,
       cursor: "pointer", overflow: "hidden", fontFamily: "inherit", color: t.text,
       marginBottom: dense ? 4 : 0,
     }}>

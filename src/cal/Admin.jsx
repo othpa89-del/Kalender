@@ -221,6 +221,6 @@ function IconPicker({ t, value, onChange }) {
 
 const row = (t) => ({
   display: "flex", alignItems: "center", gap: 8, background: t.surface,
-  border: `1px solid ${t.border}`, borderRadius: 10, padding: 8, flexWrap: "wrap",
+  border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 10, padding: 8, flexWrap: "wrap",
 });
 const colorInp = { width: 44, height: 44, padding: 0, border: "none", background: "none", borderRadius: 8, cursor: "pointer", flex: "none" };

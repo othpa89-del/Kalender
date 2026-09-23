@@ -778,7 +778,7 @@ export default function App({ onSignOut }) {
               )}
             </div>
             {!isList && showFilters && (
-              <div style={{ marginTop: 10, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ marginTop: 10, background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 12, padding: 12, display: "flex", flexWrap: "wrap", gap: 12 }}>
                 <FilterSelect t={t} label="Benutzer" value={fUser} onChange={setFUser}
                   options={[["all", "Alle"], ...users.map((u) => [u.id, u.name])]} />
                 <FilterSelect t={t} label="Bereich" value={fArea} onChange={setFArea}
@@ -949,7 +949,7 @@ function SearchResults({ t, results, userById, onOpen, query }) {
             return (
               <button key={r.kind + (r.item.id || i)} onClick={() => onOpen(r)} style={{
                 display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
-                background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
+                background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 10,
                 padding: "8px 11px", cursor: "pointer", fontFamily: "inherit", color: t.text,
               }}>
                 <span style={{ fontSize: 17, flex: "none" }}>{r.icon}</span>

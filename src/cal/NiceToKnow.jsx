@@ -77,7 +77,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
       </p>
 
       {/* Eingabe */}
-      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+      <div style={{ background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 12, padding: 12, marginBottom: 14 }}>
         <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: t.text }}>{editId ? "Notiz bearbeiten" : "Neue Notiz"}</div>
         <Field t={t} dense label="Überschrift">
           <input style={sel} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. WLAN-Passwort" />
@@ -137,7 +137,7 @@ export function NiceToKnow({ t, ctx, items, setItems }) {
             const r = rubrikById(x.rubrik);
             const who = ctx.userById && ctx.userById(x.addedBy);
             return (
-              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px" }}>
+              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 10, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {x.title && <div style={{ fontWeight: 700, fontSize: 14, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}

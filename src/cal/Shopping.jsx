@@ -362,7 +362,7 @@ function Item({ x, t, ctx, sel, editId, editText, setEditText, toggle, remove, s
   return (
     <div id={"hl-" + x.id} style={{
       display: "flex", alignItems: "center", gap: 10, background: t.surface,
-      border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 12px",
+      border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 10, padding: "10px 12px",
     }}>
       {/* Label vergrößert die Trefferfläche auf 44px, ohne das Layout zu verschieben */}
       <label style={{ display: "inline-flex", padding: 11, margin: -11, marginRight: -9, flex: "none", cursor: "pointer" }}>

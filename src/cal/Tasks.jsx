@@ -42,7 +42,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
   return (
     <div>
       {/* Editor */}
-      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+      <div style={{ background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 12, padding: 12, marginBottom: 14 }}>
         <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8, color: t.text }}>{editId ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</div>
         <Field t={t} dense label="Titel" required>
           <input style={sel} value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="z. B. Hotel buchen" />
@@ -108,7 +108,7 @@ export function Tasks({ t, ctx, tasks, setTasks }) {
             return (
               <div key={x.id} id={"hl-" + x.id} style={{
                 display: "flex", alignItems: "flex-start", gap: 10, background: t.surface,
-                border: `1px solid ${overdue ? "#E53935" : t.border}`, borderLeft: `4px solid ${prio ? prio.color : t.borderSoft}`,
+                border: `1px solid ${overdue ? "#E53935" : t.cardBorder}`, boxShadow: t.cardShadow, borderLeft: `4px solid ${prio ? prio.color : t.borderSoft}`,
                 borderRadius: 10, padding: "10px 12px",
               }}>
                 {/* Label vergrößert die Trefferfläche auf 44px, ohne das Layout zu verschieben */}

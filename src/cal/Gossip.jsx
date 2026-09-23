@@ -113,7 +113,7 @@ export function Gossip({ t, ctx, items, setItems }) {
       </p>
 
       {/* Eingabe */}
-      <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 14, marginBottom: 18 }}>
+      <div style={{ background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 12, padding: 14, marginBottom: 18 }}>
         <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: t.text }}>{editId ? "Eintrag bearbeiten" : "Neuer Eintrag"}</div>
         <Field t={t} label="Überschrift">
           <input style={sel} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Worum geht's?" />
@@ -199,7 +199,7 @@ export function Gossip({ t, ctx, items, setItems }) {
             const who = ctx.userById && ctx.userById(x.addedBy);
             const comments = x.comments || [];
             return (
-              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderLeft: `4px solid ${lv && lv.id ? lv.color : t.border}`, borderRadius: 12, padding: "12px 14px" }}>
+              <div key={x.id} id={"hl-" + x.id} style={{ background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderLeft: `4px solid ${lv && lv.id ? lv.color : t.border}`, borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {x.title && <div style={{ fontWeight: 800, fontSize: 15, color: t.text, wordBreak: "break-word" }}>{x.title}</div>}

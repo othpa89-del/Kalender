@@ -589,6 +589,8 @@ export function theme(mode) {
       todayBg: "rgba(46,91,255,.16)",
       // Akzent als SCHRIFTfarbe: das kräftige Blau ist auf Dunkel zu kontrastarm
       accentText: "#7FA0FF",
+      // Karten: im Dunkelmodus Rand behalten (Schatten wirken dort kaum)
+      cardBorder: "#2A3C5E", cardShadow: "0 1px 2px rgba(0,0,0,.25)",
     };
   }
   return {
@@ -600,5 +602,7 @@ export function theme(mode) {
     input: "#FFFFFF", chip: "#EEF2FA", shadow: "0 10px 30px rgba(20,40,80,.10)",
     todayBg: "rgba(46,91,255,.10)",
     accentText: ACCENT,
+    // Karten: kaum sichtbarer Rand + weicher Schatten statt grauer Linie
+    cardBorder: "rgba(21,34,56,.06)", cardShadow: "0 1px 2px rgba(16,30,60,.06), 0 3px 12px rgba(16,30,60,.07)",
   };
 }

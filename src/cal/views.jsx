@@ -659,7 +659,7 @@ export function Dashboard({ t, ctx, allEvents, occ7, tasks, gossip = [], onSelec
               return (
                 <button key={r.kind + (r.item.id || i)} onClick={() => openRecent(r)} style={{
                   display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
-                  background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10,
+                  background: t.surface, border: `1px solid ${t.cardBorder}`, boxShadow: t.cardShadow, borderRadius: 10,
                   padding: "8px 11px", cursor: "pointer", fontFamily: "inherit", color: t.text,
                 }}>
                   <span style={{ fontSize: 17, flex: "none" }}>{r.icon}</span>
