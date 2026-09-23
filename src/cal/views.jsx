@@ -231,12 +231,41 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
 
   // Termine mit Uhrzeit je Tag
   const timed = isos.map((iso) => layoutDay(occ.filter((e) => e.date === iso && !e.allDay && !((e._span || 1) > 1))));
-  const mins = timed.flat().flatMap((p) => [p.s, p.e]);
-  const startH = Math.min(7, ...mins.map((m) => Math.floor(m / 60)));
-  const endH = Math.max(20, ...mins.map((m) => Math.ceil(m / 60)));
+  const startH = 0, endH = 24;
   const hours = Array.from({ length: endH - startH }, (_, i) => startH + i);
   const nowIdx = isos.indexOf(today);
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  // Höhe des Scrollbereichs: bis zum unteren Bildschirmrand (mind. 9 Std.,
+  // höchstens der ganze Tag). getBoundingClientRect enthält den zoom-Faktor
+  // der App, die Höhe selbst wird in CSS-Pixeln (ungezoomt) gesetzt.
+  const scrollRef = React.useRef(null);
+  const [gridH, setGridH] = React.useState(HOUR * 13);
+  React.useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof window === "undefined") return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const zoom = el.offsetHeight ? r.height / el.offsetHeight : 1;
+      const avail = (window.innerHeight - Math.max(0, r.top) - 12) / (zoom || 1);
+      setGridH(Math.round(Math.min(HOUR * 24, Math.max(HOUR * 9, avail))));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Beim Öffnen und Blättern an eine sinnvolle Stelle springen: aktuelle Woche
+  // -> kurz vor „jetzt“, sonst erster Termin mit Uhrzeit, sonst 07:00.
+  const wsISO = isos[0];
+  React.useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const starts = timed.flat().map((p) => p.s);
+    const target = nowIdx >= 0 ? nowMin - 90 : starts.length ? Math.min(...starts) - 30 : 7 * 60;
+    el.scrollTop = Math.max(0, (target / 60) * HOUR);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wsISO]);
 
   return (
     <div>
@@ -255,7 +284,13 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
           ))}
         </div>
       )}
-      <div style={{ position: "relative", display: "grid", gridTemplateColumns: cols, borderTop: `1px solid ${t.border}` }}>
+      {/* Ganzer Tag (0–24 Uhr), scrollt innerhalb der Ansicht; Tageskopf und
+          Ganztags-Balken bleiben oben stehen. */}
+      <div ref={scrollRef} style={{
+        height: gridH, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch",
+        borderTop: `1px solid ${t.border}`, borderBottom: `1px solid ${t.border}`,
+      }}>
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: cols }}>
         {/* Stunden */}
         <div>
           {hours.map((h) => (
@@ -312,6 +347,7 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
