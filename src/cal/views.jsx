@@ -205,6 +205,23 @@ function WeekHead({ t, days, onPickDay, cols }) {
   );
 }
 
+// Heller Block-Stil (wie Apple/Google-Kalender): deckender Pastellton der
+// Kategoriefarbe, kräftiger Streifen links, Schrift in dunklerem Ton derselben
+// Farbe. Deckend (nicht transparent), damit überlappende Blöcke sauber wirken.
+function mixHex(a, b, r) {
+  const p = (h) => { const n = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16)); };
+  const x = p(a), y = p(b);
+  return "#" + x.map((v, i) => Math.round(v * (1 - r) + y[i] * r).toString(16).padStart(2, "0")).join("");
+}
+function softBlock(color, t) {
+  const dark = t.mode === "dark";
+  return {
+    bg: mixHex(t.surface, color, dark ? 0.34 : 0.17),
+    ink: dark ? mixHex(color, "#FFFFFF", 0.55) : mixHex(color, "#000000", 0.38),
+    stripe: color,
+  };
+}
+
 export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
   const days = weekDays(dateISO);
   const isos = days.map(toISODate);
@@ -272,16 +289,16 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
       <WeekHead t={t} days={days} onPickDay={onPickDay} cols={cols} />
       {allDay.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: cols, gridAutoRows: 22, rowGap: 3, marginBottom: 6 }}>
-          {allDay.map((b) => (
+          {allDay.map((b) => { const sb = softBlock(monthBarColor(b.ev, t), t); return (
             <button key={b.ev.id + b.ev._occStart} onClick={() => onSelect(b.ev)} className="cal-bar" style={{
               gridColumn: `${b.start + 2} / ${b.end + 3}`, gridRow: b.lane + 1,
-              background: monthBarColor(b.ev, t), color: "#fff", border: "none", borderRadius: 5,
+              background: sb.bg, color: sb.ink, border: "none", borderLeft: `3px solid ${sb.stripe}`, borderRadius: 5,
               fontSize: 11, fontWeight: 700, padding: "0 5px", overflow: "hidden", whiteSpace: "nowrap",
               textOverflow: "ellipsis", cursor: "pointer", fontFamily: "inherit", lineHeight: "22px",
               textAlign: b.end > b.start ? "center" : "left",
             }} title={`${b.ev.title || "(ohne Titel)"} · ${occTimeLabel(b.ev)}`}>
               <span aria-hidden style={{ fontWeight: 400 }}>{b.ev.icon || "📌"}</span> {b.ev.title || "(ohne Titel)"}</button>
-          ))}
+          ); })}
         </div>
       )}
       {/* Ganzer Tag (0–24 Uhr), scrollt innerhalb der Ansicht; Tageskopf und
@@ -313,13 +330,15 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                 const indent = colCount > 1 ? Math.min(28, 60 / (colCount - 1)) : 0;
                 const left = lane * indent, w = 100 - left;
                 const roomy = height >= 44; // Platz für Zeit, Icon und Titel untereinander
+                const sb = softBlock(monthBarColor(ev, t), t);
                 return (
                   <button key={ev.id + i} onClick={() => onSelect(ev)}
                     title={`${ev.title || "(ohne Titel)"} · ${occTimeLabel(ev)}`}
                     aria-label={`${ev.title || "(ohne Titel)"}, ${occTimeLabel(ev)}${conflict ? ", Überschneidung" : ""}`} style={{
                     position: "absolute", top, height, left: `calc(${left}% + 1px)`, width: `calc(${w}% - 2px)`,
-                    background: monthBarColor(ev, t), color: "#fff", borderRadius: 5,
-                    border: conflict ? "2px solid #E53935" : "none",
+                    background: sb.bg, color: sb.ink, borderRadius: 5,
+                    border: conflict ? "1.5px solid #E53935" : "none",
+                    borderLeft: `3px solid ${sb.stripe}`,
                     // heller Rand trennt übereinanderliegende Blöcke
                     boxShadow: lane > 0 ? `0 0 0 1.5px ${t.bg}` : "none",
                     padding: "2px 3px", overflow: "hidden", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
@@ -327,7 +346,7 @@ export function WeekView({ t, ctx, dateISO, occ, onSelect, onPickDay }) {
                   }}>
                     {roomy ? (
                       <>
-                        <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.9, lineHeight: 1.1 }}>{conflict ? "⚠️ " : ""}{ev.start}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, opacity: 0.85, lineHeight: 1.1 }}>{conflict ? "⚠️ " : ""}{ev.start}</span>
                         <span aria-hidden style={{ fontSize: 13, lineHeight: 1 }}>{ev.icon || "📌"}</span>
                         <span lang="de" style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.15, overflowWrap: "anywhere", hyphens: "auto", WebkitHyphens: "auto" }}>{ev.title || "(ohne Titel)"}</span>
                       </>
