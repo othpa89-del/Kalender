@@ -75,6 +75,32 @@
         .tab-scroll { scrollbar-width: none; }
         .tab-scroll::-webkit-scrollbar { display: none; }
       }
+      /* Dialoge: sanft einblenden; am iPhone als "Sheet" von unten (iOS-Stil),
+         Kopf und Fuss bleiben stehen, nur der Inhalt scrollt. */
+      @keyframes ovl-in { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes dlg-pop { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+      @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+      .modal-ovl { animation: ovl-in .18s ease-out; }
+      .modal-dlg { animation: dlg-pop .2s ease-out; }
+      .modal-grab { display: none; }
+      @media (max-width: 600px) {
+        .modal-ovl { align-items: flex-end !important; padding: max(24px, env(safe-area-inset-top)) 0 0 !important; overflow: hidden !important; }
+        .modal-dlg {
+          margin-top: 0 !important; max-width: none !important; max-height: 100%;
+          border-radius: 18px 18px 0 0 !important; border-bottom: none !important;
+          display: flex; flex-direction: column;
+          animation: sheet-up .3s cubic-bezier(.2, .8, .2, 1);
+        }
+        .modal-head { padding-top: 18px !important; }
+        .modal-grab {
+          display: block; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+          width: 38px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.35);
+        }
+        .modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        .modal-body--last { padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important; }
+        .modal-foot { flex: none; padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important; }
+      }
+      @media (prefers-reduced-motion: reduce) { .modal-ovl, .modal-dlg { animation: none !important; } }
       /* Monatsansicht auch am Handy gut treffbar (Balken/Tageszahlen groesser) */
       .cal-bars { grid-auto-rows: 22px !important; row-gap: 3px !important; }
       .cal-bar { line-height: 22px !important; font-size: 11px !important; border-radius: 5px !important; padding: 0 6px !important; }

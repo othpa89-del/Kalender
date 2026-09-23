@@ -75,6 +75,7 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
     onClose();
   }
   useScrollLock();
+  const hasFooter = !!(typeof footer === "function" ? footer(requestClose) : footer);
   // Tastatur: Esc schließt (gleicher Weg wie der ×-Knopf, inkl. Rückfrage)
   const closeRef = React.useRef(requestClose);
   closeRef.current = requestClose;
@@ -84,21 +85,24 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   return (
-    <div onClick={requestClose} style={{
+    // Klassen modal-*: am iPhone (≤600px) wird daraus per CSS (index.html) ein
+    // „Sheet“, das von unten hereingleitet; breiter bleibt es ein Fenster.
+    <div className="modal-ovl" onClick={requestClose} style={{
       position: "fixed", inset: 0, background: "rgba(5,10,22,.62)", zIndex: 200,
       display: "flex", alignItems: "flex-start", justifyContent: "center",
       padding: "max(16px, env(safe-area-inset-top)) 12px 24px", overflowY: "auto",
     }}>
-      <div role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}
+      <div className="modal-dlg" role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined}
         onClick={(e) => e.stopPropagation()} style={{
         width: "100%", maxWidth: wide ? 720 : 540, background: t.surface, color: t.text,
         borderRadius: 16, border: `1px solid ${t.border}`, boxShadow: t.shadow,
         marginTop: 24, overflow: "hidden",
       }}>
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "14px 18px", background: t.navy, color: "#fff",
+        <div className="modal-head" style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative",
+          padding: "14px 18px", background: t.navy, color: "#fff", flex: "none",
         }}>
+          <span className="modal-grab" aria-hidden="true" />
           <div style={{ fontWeight: 800, fontSize: 16 }}>{title}</div>
           <button onClick={requestClose} aria-label="Schließen" style={{
             background: "rgba(255,255,255,.12)", color: "#fff", border: "none",
@@ -106,9 +110,9 @@ export function Modal({ t, title, onClose, children, footer, wide, hasChanges })
             display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none",
           }}>×</button>
         </div>
-        <div style={{ padding: 18 }}>{children}</div>
-        {(typeof footer === "function" ? footer(requestClose) : footer) && (
-          <div style={{
+        <div className={hasFooter ? "modal-body" : "modal-body modal-body--last"} style={{ padding: 18 }}>{children}</div>
+        {hasFooter && (
+          <div className="modal-foot" style={{
             padding: "12px 18px", borderTop: `1px solid ${t.border}`, background: t.surface2,
             display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap",
           }}>{typeof footer === "function" ? footer(requestClose) : footer}</div>
