@@ -10,6 +10,21 @@ import { Modal, Field, inputStyle, Btn, Dot } from "./components.jsx";
 
 const MAX_FILE = 800 * 1024; // 800 KB pro Anhang (Cloud-Sync)
 
+// Datum + Uhrzeit <-> Zeitpunkt (lokale Zeit), für Dauer-Berechnungen.
+const toMs = (date, time) => new Date(`${date}T${time || "00:00"}:00`).getTime();
+const p2 = (n) => String(n).padStart(2, "0");
+function fromMs(ms) {
+  const d = new Date(ms);
+  return { date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`, time: `${p2(d.getHours())}:${p2(d.getMinutes())}` };
+}
+const DEFAULT_DURATION = 60 * 60000; // 1 Stunde
+// Aktuelle Dauer des Termins; ungültig (Ende vor Beginn) -> 1 Stunde.
+function durationOf(p) {
+  if (!p.date || !p.start || !p.end) return DEFAULT_DURATION;
+  const d = toMs(p.endDate || p.date, p.end) - toMs(p.date, p.start);
+  return d > 0 ? d : DEFAULT_DURATION;
+}
+
 export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit, isNew }) {
   const [f, setF] = useState(draft);
   const [confirmConflict, setConfirmConflict] = useState(false);
@@ -34,11 +49,25 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
   const rec = f.recurrence || { freq: "none" };
   const readOnly = !canEdit;
 
-  // Beginn-Datum ändern: Ende-Datum zieht mit, falls es sonst davor läge.
+  // Beginn ändern (Datum oder Uhrzeit): das Ende wandert mit, die Dauer bleibt
+  // gleich – wie im Apple/Google-Kalender. Neuer Termin: Dauer 1 Stunde.
+  // Über Mitternacht springt das Ende-Datum automatisch mit.
   function setStartDate(v) {
+    if (!v) return;
     setF((p) => {
-      const ed = p.endDate || p.date;
-      return { ...p, date: v, endDate: (!ed || ed < v) ? v : ed };
+      if (p.allDay) {
+        const days = Math.max(0, Math.round((toMs(p.endDate || p.date) - toMs(p.date)) / 86400000));
+        return { ...p, date: v, endDate: fromMs(toMs(v) + days * 86400000).date };
+      }
+      const end = fromMs(toMs(v, p.start) + durationOf(p));
+      return { ...p, date: v, endDate: end.date, end: end.time };
+    });
+  }
+  function setStartTime(v) {
+    if (!v) { set("start", v); return; }
+    setF((p) => {
+      const end = fromMs(toMs(p.date, v) + durationOf(p));
+      return { ...p, start: v, endDate: end.date, end: end.time };
     });
   }
   // Ende-Datum darf nie vor dem Beginn liegen -> auf den Beginn begrenzen.
@@ -55,6 +84,10 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           end: (!p.end || p.end === "23:59") ? "10:00" : p.end }));
   }
 
+  // Ende liegt (von Hand eingestellt) vor bzw. auf dem Beginn?
+  const endBeforeStart = !f.allDay && !!(f.date && f.start && f.end)
+    && toMs(f.endDate || f.date, f.end) <= toMs(f.date, f.start);
+
   function validate() {
     if (!f.title.trim()) return "Bitte einen Titel eingeben.";
     if (!f.date) return "Bitte ein Beginn-Datum wählen.";
@@ -62,7 +95,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
     if (ed < f.date) return "Das Ende-Datum darf nicht vor dem Beginn liegen.";
     if (!f.allDay) {
       if (!f.start || !f.end) return "Bitte Start- und Endzeit angeben.";
-      if (ed === f.date && f.end <= f.start) return "Die Endzeit muss nach der Startzeit liegen.";
+      if (endBeforeStart) return "Das Ende muss nach dem Beginn liegen.";
     }
     if (!f.creatorId) return "Bitte einen Ersteller wählen.";
     if (!f.areaId) return "Bitte einen Bereich wählen.";
@@ -116,7 +149,8 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
         <>
           {!isNew && canEdit && <Btn t={t} kind="danger" onClick={() => onDelete(f)} style={{ marginRight: "auto" }}>Löschen</Btn>}
           <Btn t={t} kind="ghost" onClick={requestClose}>Schließen</Btn>
-          {canEdit && <Btn t={t} kind="primary" onClick={trySave}>{confirmConflict ? "Trotzdem speichern" : "Speichern"}</Btn>}
+          {canEdit && <Btn t={t} kind="primary" onClick={trySave} disabled={endBeforeStart}
+            style={endBeforeStart ? { opacity: 0.5, cursor: "not-allowed" } : undefined}>{confirmConflict ? "Trotzdem speichern" : "Speichern"}</Btn>}
         </>
       )}>
 
@@ -169,7 +203,7 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           {!f.allDay && (
             <div className="dt-col">
               <Field t={t} label="Beginn – Uhrzeit" required>
-                <input type="time" style={dt} value={f.start} onChange={(e) => set("start", e.target.value)} />
+                <input type="time" style={dt} value={f.start} onChange={(e) => setStartTime(e.target.value)} />
               </Field>
             </div>
           )}
@@ -184,11 +218,19 @@ export function EventEditor({ t, ctx, draft, onSave, onDelete, onClose, canEdit,
           {!f.allDay && (
             <div className="dt-col">
               <Field t={t} label="Ende – Uhrzeit" required>
-                <input type="time" style={dt} value={f.end} onChange={(e) => set("end", e.target.value)} />
+                <input type="time" value={f.end} onChange={(e) => set("end", e.target.value)}
+                  aria-invalid={endBeforeStart || undefined}
+                  style={endBeforeStart ? { ...dt, borderColor: "#E53935", boxShadow: "0 0 0 1px #E53935", color: "#E53935" } : dt} />
               </Field>
             </div>
           )}
         </div>
+
+        {endBeforeStart && (
+          <div role="alert" style={{ marginTop: -4, marginBottom: 12, fontSize: 13, fontWeight: 700, color: "#E53935" }}>
+            ⚠️ Das Ende liegt vor dem Beginn – bitte Ende-Datum oder -Uhrzeit anpassen.
+          </div>
+        )}
 
         {/* Konfliktwarnung */}
         {conflicts.length > 0 && (
